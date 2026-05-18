@@ -1,2 +1,3 @@
-print("learn")
+print("learning")
 "tuesdays works"
+print("somethingelse")
