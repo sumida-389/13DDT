@@ -24,7 +24,7 @@ def create_tables():
         )
     """)
 
-    #notes table
+    #note table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS notes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
