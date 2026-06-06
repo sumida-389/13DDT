@@ -6,6 +6,8 @@ import hashlib
 from tkinter import messagebox 
 
 
+root = tk.Tk()
+
 class database_setup:
     def __init__(self,db_path="study_app.db"):
         self.db_path = db_path
@@ -68,7 +70,7 @@ class database_setup:
             )
         """)
         self.connection.commit()
-
+        
     def get_cursor(self):
         # returns a cursor so other parts of the app can query the database
         return self.connection.cursor()
@@ -77,6 +79,9 @@ class database_setup:
         # saves any changes made to the database
         self.connection.commit()
         
+db=database_setup()
+db.create_tables()
+
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -102,50 +107,37 @@ class appface:
 
         
     def left_panel(self,head,subtext):
-        left_frame = tk.Frame(self.root, bg="#780606", width=400, height=400)
-        left_frame.pack(side="left", fill="y")
-        left_frame.pack_propagate(False)
+        left = tk.Frame(self.root, bg="#780606", width=400, height=400)
+        left.pack(side="left", fill="y")
+        left.pack_propagate(False)
  
-        tk.Label(left_frame, text="✳", bg="#780606", fg="white",
+        tk.Label(left, text="✳", bg="#780606", fg="white",
                  font=("Helvetica", 40, "bold")).place(x=44, y=44)
  
-        tk.Label(left_frame, text=head, bg="#780606", fg="white",
+        tk.Label(left, text=head, bg="#780606", fg="white",
                  font=("Helvetica", 30, "bold"), justify="left").place(x=44, y=200)
  
-        tk.Label(left_frame, text=subtext, bg="#780606", fg="#ccccff",
+        tk.Label(left, text=subtext, bg="#780606", fg="#ccccff",
                  font=("Helvetica", 12), justify="left",
                  wraplength=320).place(x=44, y=330)
     
 
     def text_input(self, parent, placeholder, is_password=False):
-        text_frame = tk.Frame(parent, bg="white")
-        text_frame.pack(fill="x", pady=(0, 14))
+        frame = tk.Frame(parent, bg="white")
+        frame.pack(fill="x", pady=(0, 14))
  
-        user_pass = tk.Entry(text_frame, font=("Helvetica", 13),
+        entry = tk.Entry(frame, font=("Helvetica", 13),
                          bg="white", fg="#aaaaaa",
                          relief="flat", bd=0, width=32)
-        user_pass.insert(0, placeholder)
-        user_pass.pack(fill="x", ipady=8)
+        entry.insert(0, placeholder)
+        entry.pack(fill="x", ipady=8)
  
-        underline = tk.Frame(text_frame, bg="#dddddd", height=1)
+        underline = tk.Frame(frame, bg="#dddddd", height=1)
         underline.pack(fill="x")
 
-        def on_click_field(event):
-            if user_pass.get() == placeholder:
-                user_pass.delete(0, "end")
-                user_pass.config(fg="#111111")
-                if is_password:
-                    user_pass.config(show="•")     # hide password with dots
-            underline.config(bg="#2A2AE1")
-        def unclick_field(event):
-            if user_pass.get() == "":
-                user_pass.config(fg="#aaaaaa", show="")
-                user_pass.insert(0, placeholder)   # put placeholder back
-            underline.config(bg="#dddddd") 
 
-        user_pass.bind("<FocusIn>",  on_click_field) # when the user clicks on the field, it will clear the placeholder text and change the text color to black. If it's a password field, it will also hide the input with dots.
-        user_pass.bind("<FocusOut>", unclick_field) # when the user clicks away from the field, if it's empty it will put the placeholder text back and change the text color to gray. It will also show the input if it's a password field.
-        return user_pass
+
+        return entry
     
     def login_screen(self):
         clear_screen(self.root)
@@ -156,10 +148,10 @@ class appface:
         )
  
         # Right white frame where login goes
-        right_panel = tk.Frame(self.root, bg="white")
-        right_panel.pack(side="right", fill="both", expand=True)
+        right = tk.Frame(self.root, bg="white")
+        right.pack(side="right", fill="both", expand=True)
  
-        form = tk.Frame(right_panel, bg="white")
+        form = tk.Frame(right, bg="white")
         form.place(relx=0.5, rely=0.5, anchor="center")
  
         # name
@@ -171,14 +163,14 @@ class appface:
                  font=("Helvetica", 22, "bold")).pack(anchor="w")
  
         # Link to register
-        sub_text = tk.Frame(form, bg="white")
-        sub_text.pack(anchor="w", pady=(6, 24))
-        tk.Label(sub_text, text="No account? ", bg="white", fg="#888888",
+        sub = tk.Frame(form, bg="white")
+        sub.pack(anchor="w", pady=(6, 24))
+        tk.Label(sub, text="No account? ", bg="white", fg="#888888",
                  font=("Helvetica", 11)).pack(side="left")
-        tk.Label(sub_text, text="Register here", bg="white", fg="#2A2AE1",
+        tk.Label(sub, text="Register here", bg="white", fg="#2A2AE1",
                  font=("Helvetica", 11, "underline"),
                  cursor="hand2").pack(side="left")
-        sub_text.winfo_children()[1].bind("<Button-1>", lambda e: self.register_screen())
+        
         
         
         
@@ -221,11 +213,19 @@ class appface:
                 status.config(text="Incorrect username or password.")
  
         # Login button
-        tk.Button(form, text="Login Now", bg="#0d0d0d", fg="white",
-                  font=("Helvetica", 13, "bold"), relief="flat", bd=0,
-                  cursor="hand2", width=30, height=2, activebackground="#2A2AE1",
-                  activeforeground="white", command=attempt_login).pack(pady=(4, 0))
+        tk.Button(form, text="Login Now",
+                  bg="#0d0d0d", fg="white",
+                  font=("Helvetica", 13, "bold"),
+                  relief="flat", bd=0,
+                  cursor="hand2", width=30, height=2,
+                  activebackground="#2A2AE1", activeforeground="white",
+                  command=attempt_login).pack(pady=(4, 0))
         
+
+
+
+
+
 
     def register_screen(self):
         clear_screen(self.root)
@@ -233,10 +233,10 @@ class appface:
             head="create account",
             subtext="subtext for create account screen"
         )
-        right_frame = tk.Frame(self.root, bg="white")
-        right_frame.pack(side="right", fill="both", expand=True)
+        right = tk.Frame(self.root, bg="white")
+        right.pack(side="right", fill="both", expand=True)
  
-        form = tk.Frame(right_frame, bg="white")
+        form = tk.Frame(right, bg="white")
         form.place(relx=0.5, rely=0.5, anchor="center")
  
         tk.Label(form, text="Study App", bg="white", fg="#111111",
@@ -300,47 +300,14 @@ class appface:
                 cursor="hand2", width=30, height=2,
                 activebackground="#2A2AE1", activeforeground="white",
                 command=attempt_register).pack(pady=(4, 0))
-    def home_screen(self):
-        clear_screen(self.root)
-        self.root.configure(bg="white")
-        tk.Label(self.root, text=f"Welcome, {self.current_username}",
-        font=("Helvetica", 20, "bold")).pack(pady=20)
+ 
 
-        tk.Button( self.root,text="Open Notes",
-                  command=self.notes_screen).pack(pady=10)
+            
+            
+            
             
         
-    def notes_screen(self):
-        clear_screen(self.root)
-        self.root.configure(bg="white")
-        notes_text = tk.Text(self.root, wrap="word", font=("Arial", 14))
-        notes_text.pack(fill="both", expand=True)
-        cursor = self.db.get_cursor()
-        cursor.execute(
-            "SELECT body FROM notes WHERE user_id=?",
-            (self.current_user_id,))
-        note = cursor.fetchone()
-        if note is None:
-            cursor.execute(
-                "INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)",
-                (self.current_user_id, "My Notes", "")
-            )
-            self.db.commit()
-            note_body = ""
-        else:
-            note_body = note[0]
-        notes_text.insert("1.0", note_body)
-        def save_note():
-            new_body = notes_text.get("1.0", "end-1c")
-            cursor.execute(
-                "UPDATE notes SET body=? WHERE user_id=?",
-                (new_body, self.current_user_id)
-            )
-            self.db.commit()
-            messagebox.showinfo("Saved", "Your notes have been saved.")
-        save_button = tk.Button(root, text="Save Notes", command=save_note)
-        save_button.pack(pady=10)
-            
+    
     
 root=tk.Tk()
 app = appface(root) 
