@@ -176,8 +176,7 @@ class appface:
         tk.Label(sub_text, text="No account? ", bg="white", fg="#888888",
                  font=("Helvetica", 11)).pack(side="left")
         tk.Label(sub_text, text="Register here", bg="white", fg="#2A2AE1",
-                 font=("Helvetica", 11, "underline"),
-                 cursor="hand2").pack(side="left")
+                 font=("Helvetica", 11, "underline")).pack(side="left")
         sub_text.winfo_children()[1].bind("<Button-1>", lambda e: self.register_screen())
         
         
@@ -223,7 +222,7 @@ class appface:
         # Login button
         tk.Button(form, text="Login Now", bg="#0d0d0d", fg="white",
                   font=("Helvetica", 13, "bold"), relief="flat", bd=0,
-                  cursor="hand2", width=30, height=2, activebackground="#2A2AE1",
+                  width=30, height=2, activebackground="#2A2AE1",
                   activeforeground="white", command=attempt_login).pack(pady=(4, 0))
         
 
@@ -250,8 +249,7 @@ class appface:
         tk.Label(sub, text="Already have acc?", bg="white", fg="#888888",
                  font=("Helvetica", 11)).pack(side="left")
         tk.Label(sub, text="Login here", bg="white", fg="#2A2AE1",
-                 font=("Helvetica", 11, "underline"),
-                 cursor="hand2").pack(side="left")
+                 font=("Helvetica", 11, "underline")).pack(side="left")
         sub.winfo_children()[1].bind("<Button-1>", lambda e: self.login_screen())
  
         # Input fields
@@ -296,8 +294,7 @@ class appface:
         tk.Button(form, text="create acc",
                 bg="#a6ba42", fg="white",
                 font=("Helvetica", 13, "bold"),
-                relief="flat", bd=0,
-                cursor="hand2", width=30, height=2,
+                relief="flat", bd=0, width=30, height=2,
                 activebackground="#2A2AE1", activeforeground="white",
                 command=attempt_register).pack(pady=(4, 0))
     def home_screen(self):
@@ -306,8 +303,9 @@ class appface:
         tk.Label(self.root, text=f"Welcome, {self.current_username}",
         font=("Helvetica", 20, "bold")).pack(pady=20)
 
-        tk.Button( self.root,text="Open Notes",
-                  command=self.notes_screen).pack(pady=10)
+        tk.Button( self.root,text="Open Notes",command=self.notes_screen).pack(pady=10)
+        
+        tk.Button(self.root,text="Flashcards",command=self.flashcards_screen).pack(pady=10)
             
         
     def notes_screen(self):
@@ -338,8 +336,58 @@ class appface:
             )
             self.db.commit()
             messagebox.showinfo("Saved", "Your notes have been saved.")
-        save_button = tk.Button(root, text="Save Notes", command=save_note)
+        save_button = tk.Button(self.root, text="Save Notes", command=save_note)
         save_button.pack(pady=10)
+        
+        def flashcards_screen(self):
+            clear_screen(self.root)
+            self.root.configure(bg="white")
+            cursor=self.db.get_cursor()
+            cursor.execute("SELECT id FROM decks WHERE user_id=?",
+                           (self.current_user_id,))
+            deck = cursor.fetchone()
+            if deck is None:
+                cursor.execute("INSERT INTO decks (user_id, name) VALUES (?, ?)",)
+                (self.current_user_id,"My flashcards")
+                self.db.commit()
+                deck_id= cursor.lastrowid
+            else:
+                deck_id = deck[0]
+            tk.Label(self.root,text="flashcards").pack(pady=20)
+            
+            flash_frame = tk.Frame(self.root, bg="white")
+            flash_frame.pack(pady=10)
+            
+            question_entry=tk.Entry(flash_frame,width=40)
+            question_entry.grid(row=0, column=0, padx=5)
+            
+            answer_entry=tk.Entry(flash_frame,width=40)
+            answer_entry.grid(row=0, column=1, padx=5)
+            
+            cards_frame=tk.Frame(self.root, bg="white")
+            cards_frame.pack(pady=10)
+            
+            def load_flashcards():
+                #clear old cards
+                for widget in cards_frame.winfo_children():
+                    widget.destroy()
+                    
+                cursor.execute("SELECT front, back FROM flashcards WHERE deck_id=?",(deck_id,))
+                for question, answer in cursor.fetchall():
+                    card = tk.Frame(cards_frame,bg="#f0f0f0",width=300,
+                    height=150,relief="solid",bd=1)
+                    card.pack(pady=10)
+                    question_label = tk.Label(card,text=question)
+                    question_label.pack(pady=10)
+                    state = {"answer": False}
+                
+                def flip_card(event,):
+                    
+                    
+
+
+
+
             
     
 root=tk.Tk()
