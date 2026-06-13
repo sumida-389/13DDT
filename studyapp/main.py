@@ -339,57 +339,101 @@ class appface:
         save_button = tk.Button(self.root, text="Save Notes", command=save_note)
         save_button.pack(pady=10)
         
-        def flashcards_screen(self):
-            clear_screen(self.root)
-            self.root.configure(bg="white")
-            cursor=self.db.get_cursor()
-            cursor.execute("SELECT id FROM decks WHERE user_id=?",
-                           (self.current_user_id,))
-            deck = cursor.fetchone()
-            if deck is None:
-                cursor.execute("INSERT INTO decks (user_id, name) VALUES (?, ?)",)
-                (self.current_user_id,"My flashcards")
-                self.db.commit()
-                deck_id= cursor.lastrowid
-            else:
-                deck_id = deck[0]
-            tk.Label(self.root,text="flashcards").pack(pady=20)
-            
-            flash_frame = tk.Frame(self.root, bg="white")
-            flash_frame.pack(pady=10)
-            
-            question_entry=tk.Entry(flash_frame,width=40)
-            question_entry.grid(row=0, column=0, padx=5)
-            
-            answer_entry=tk.Entry(flash_frame,width=40)
-            answer_entry.grid(row=0, column=1, padx=5)
-            
-            cards_frame=tk.Frame(self.root, bg="white")
-            cards_frame.pack(pady=10)
-            
-            def load_flashcards():
-                #clear old cards
-                for widget in cards_frame.winfo_children():
-                    widget.destroy()
-                    
-                cursor.execute("SELECT front, back FROM flashcards WHERE deck_id=?",(deck_id,))
-                for question, answer in cursor.fetchall():
-                    card = tk.Frame(cards_frame,bg="#f0f0f0",width=300,
-                    height=150,relief="solid",bd=1)
-                    card.pack(pady=10)
-                    question_label = tk.Label(card,text=question)
-                    question_label.pack(pady=10)
-                    state = {"answer": False}
+    def flashcards_screen(self):
+        clear_screen(self.root)
+        self.root.configure(bg="white")
+        cursor=self.db.get_cursor()
+        cursor.execute("SELECT id FROM decks WHERE user_id=?",
+                        (self.current_user_id,))
+        deck = cursor.fetchone()
+        if deck is None:
+            cursor.execute(
+                "INSERT INTO decks (user_id, name) VALUES (?, ?)",
+                (self.current_user_id, "My flashcards")
+            )
+            self.db.commit()
+            deck_id= cursor.lastrowid
+        else:
+            deck_id = deck[0]
+        tk.Label(self.root,text="flashcards").pack(pady=20)
+        
+        flash_frame = tk.Frame(self.root, bg="white")
+        flash_frame.pack(pady=10)
+        
+        question_entry=tk.Entry(flash_frame,width=40)
+        question_entry.grid(row=0, column=0, padx=5)
+        
+        answer_entry=tk.Entry(flash_frame,width=40)
+        answer_entry.grid(row=0, column=1, padx=5)
+        
+        cards_frame=tk.Frame(self.root, bg="white")
+        cards_frame.pack(pady=10)
+        
+        
+        
+        
+        def load_flashcards():
+            #clear old cards
+            for widget in cards_frame.winfo_children():
+                widget.destroy()
                 
-                def flip_card(event,):
-                    
-                    
-
-
-
-
+            cursor.execute("SELECT front, back FROM flashcards WHERE deck_id=?",(deck_id,))
+            for question, answer in cursor.fetchall():
+                card = tk.Frame(cards_frame,bg="#f0f0f0",width=300,
+                height=150,relief="solid",bd=1)
+                card.pack(pady=10)
+                question_label = tk.Label(card,text=question)
+                question_label.pack(pady=10)
+                state = {"answer": False}
             
-    
+                def flip_card(event,lbl=question_label,q=question,a=answer,s=state):
+                    if s["answer"]:
+                        lbl.config(text=q)
+                    else:
+                        lbl.config(text=a)  
+
+                    s["answer"] = not s["answer"]
+                card.bind("<Button-1>", flip_card)
+                question_label.bind("<Button-1>", flip_card) 
+        def add_flashcard():
+            question = question_entry.get().strip()
+            answer = answer_entry.get().strip()
+
+            if not question or not answer:
+                return
+
+            cursor.execute(
+                """
+                INSERT INTO flashcards
+                (deck_id, user_id, front, back)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    deck_id,
+                    self.current_user_id,
+                    question,
+                    answer
+                )
+            )
+
+            self.db.commit()
+
+            question_entry.delete(0, "end")
+            answer_entry.delete(0, "end")
+
+            load_flashcards()    
+            
+        tk.Button(self.root,text="Add Flashcard",
+        command=add_flashcard).pack(pady=5)
+
+        tk.Button(self.root,text="Back",
+                    command=self.home_screen).pack(pady=5)
+
+        load_flashcards()
+                
+
+
+
 root=tk.Tk()
 app = appface(root) 
 root.mainloop()   
