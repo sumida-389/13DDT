@@ -68,6 +68,19 @@ class database_setup:
             )
         """)
         self.connection.commit()
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS quiz_questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quiz_id INTEGER NOT NULL,
+                question_text TEXT NOT NULL,
+                option_a TEXT NOT NULL,
+                option_b TEXT NOT NULL,
+                option_c TEXT NOT NULL,
+                option_d TEXT NOT NULL,
+                correct TEXT NOT NULL,
+                FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE)
+                """)
 
     def get_cursor(self):
         # returns a cursor so other parts of the app can query the database
@@ -307,6 +320,7 @@ class appface:
         
         tk.Button(self.root,text="Flashcards",command=self.flashcards_screen).pack(pady=10)
             
+        tk.Button(self.root,text="Quizzes",command=self.quiz_screen).pack(pady=10)
         
     def notes_screen(self):
         clear_screen(self.root)
@@ -430,7 +444,235 @@ class appface:
                     command=self.home_screen).pack(pady=5)
 
         load_flashcards()
+        
+    def quiz_screen(self):  
+        clear_screen(self.root)
+        self.root.configure(bg="white")
+        cursor = self.db.get_cursor()
+ 
+        tk.Label(self.root, text="Quizzes", font=("Helvetica", 20, "bold")).pack(pady=10)
+ 
+        # top area: list quizzes + create new
+        top = tk.Frame(self.root, bg="white")
+        top.pack(fill="x", padx=20)
+ 
+        tk.Label(top, text="Quiz name:", bg="white").pack(side="left")
+        quiz_name_entry = tk.Entry(top, width=30)
+        quiz_name_entry.pack(side="left", padx=5)
+        
+        def create_quiz():
+            name = quiz_name_entry.get().strip()
+            if not name:
+                return
+            cursor.execute("INSERT INTO quizzes (user_id, title) VALUES (?, ?)",
+                           (self.current_user_id, name))
+            self.db.commit()
+            quiz_name_entry.delete(0, "end")
+            refresh_quiz_list()
+ 
+        tk.Button(top, text="Create Quiz", command=create_quiz).pack(side="left", padx=5)
+        tk.Button(top, text="Back", command=self.home_screen).pack(side="right")
+ 
+        # quiz list
+        list_frame = tk.Frame(self.root, bg="white")
+        list_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        def refresh_quiz_list():
+            for w in list_frame.winfo_children():
+                w.destroy()
+            cursor.execute("SELECT id, title FROM quizzes WHERE user_id=?",
+                           (self.current_user_id,))
+            quizzes = cursor.fetchall()
+            if not quizzes:
+                tk.Label(list_frame, text="No quizzes yet. Create one above.",
+                         bg="white", fg="#888888").pack(pady=20)
+                return
+            for qid, qtitle in quizzes:
+                row = tk.Frame(list_frame, bg="#f0f0f0", relief="solid", bd=1)
+                row.pack(fill="x", pady=4)
+                tk.Label(row, text=qtitle, bg="#f0f0f0",
+                         font=("Helvetica", 12)).pack(side="left", padx=10, pady=8)
+                tk.Button(row, text="Edit / Add Questions",
+                          command=lambda i=qid, t=qtitle: self.quiz_edit_screen(i, t)
+                          ).pack(side="left", padx=5)
+                tk.Button(row, text="Take Quiz",
+                          command=lambda i=qid, t=qtitle: self.take_quiz(i, t)
+                          ).pack(side="left", padx=5)
                 
+                def delete_quiz(qid):
+                    if messagebox.askyesno("Delete", "Delete this quiz and all its questions?"):
+                        cursor.execute("DELETE FROM quizzes WHERE id=?", (qid,))
+                        self.db.commit()
+                        refresh_quiz_list()
+                        
+                tk.Button(row, text="Delete", fg="red",
+                          command=lambda i=qid: delete_quiz(i)).pack(side="right", padx=10)
+                
+        refresh_quiz_list()
+
+    def quiz_edit_screen(self, quiz_id, quiz_title):
+        clear_screen(self.root)
+        self.root.configure(bg="white")
+        cursor = self.db.get_cursor()
+
+        tk.Label(self.root, text=f"Edit: {quiz_title}",
+                font=("Helvetica", 16, "bold")).pack(pady=10)
+
+        # add question form
+        form = tk.Frame(self.root, bg="white")
+        form.pack(fill="x", padx=20, pady=5)
+
+        fields = {}
+        for i, label in enumerate(["Question", "Option A", "Option B", "Option C", "Option D"]):
+            tk.Label(form, text=label+":", bg="white", width=12,
+                    anchor="w").grid(row=i, column=0, sticky="w", pady=2)
+            e = tk.Entry(form, width=50)
+            e.grid(row=i, column=1, padx=5, pady=2, sticky="w")
+            fields[label] = e
+
+        tk.Label(form, text="Correct (A-D):", bg="white", width=12,
+                anchor="w").grid(row=5, column=0, sticky="w")
+        correct_var = tk.StringVar(value="A")
+        tk.OptionMenu(form, correct_var, "A", "B", "C", "D").grid(row=5, column=1, sticky="w", padx=5)
+
+        status = tk.Label(self.root, text="", bg="white", fg="red")
+        status.pack()
+
+        def add_question():
+            q  = fields["Question"].get().strip()
+            a  = fields["Option A"].get().strip()
+            b  = fields["Option B"].get().strip()
+            c  = fields["Option C"].get().strip()
+            d  = fields["Option D"].get().strip()
+            ans = correct_var.get().upper()
+            if not all([q, a, b, c, d]):
+                status.config(text="Please fill in all fields.")
+                return
+            cursor.execute("""
+                INSERT INTO quiz_questions
+                (quiz_id, question_text, option_a, option_b, option_c, option_d, correct)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (quiz_id, q, a, b, c, d, ans))
+            self.db.commit()
+            for e in fields.values():
+                e.delete(0, "end")
+            status.config(text="Question added.", fg="green")
+            load_questions()
+
+        tk.Button(self.root, text="Add Question", command=add_question).pack(pady=5)
+
+        # question list
+        q_frame = tk.Frame(self.root, bg="white")
+        q_frame.pack(fill="both", expand=True, padx=20, pady=5)
+
+        def load_questions():
+            for w in q_frame.winfo_children():
+                w.destroy()
+            cursor.execute(
+                "SELECT id, question_text, correct FROM quiz_questions WHERE quiz_id=?",
+                (quiz_id,))
+            rows = cursor.fetchall()
+            if not rows:
+                tk.Label(q_frame, text="No questions yet.", bg="white", fg="#888888").pack()
+                return
+            for qid, qtxt, qans in rows:
+                r = tk.Frame(q_frame, bg="#f0f0f0", relief="solid", bd=1)
+                r.pack(fill="x", pady=2)
+                tk.Label(r, text=f"Q: {qtxt}  [Ans: {qans}]", bg="#f0f0f0",
+                        font=("Helvetica", 10), wraplength=500,
+                        justify="left").pack(side="left", padx=8, pady=4)
+                tk.Button(r, text="Delete", fg="red",
+                        command=lambda i=qid: delete_question(i)).pack(side="right", padx=6)
+
+        def delete_question(qid):
+            cursor.execute("DELETE FROM quiz_questions WHERE id=?", (qid,))
+            self.db.commit()
+            load_questions()
+
+        tk.Button(self.root, text="Back to Quizzes",
+                command=self.quizzes_screen).pack(pady=5)
+        load_questions()
+
+    def take_quiz(self, quiz_id, quiz_title):
+        cursor = self.db.get_cursor()
+        cursor.execute("""
+            SELECT id, question_text, option_a, option_b, option_c, option_d, correct
+            FROM quiz_questions WHERE quiz_id=?
+        """, (quiz_id,))
+        questions = cursor.fetchall()
+        if not questions:
+            messagebox.showinfo("Empty Quiz", "This quiz has no questions yet.")
+            return
+
+        win = tk.Toplevel(self.root)
+        win.title(f"Quiz: {quiz_title}")
+        win.geometry("600x450")
+        win.configure(bg="white")
+        win.grab_set()
+
+        state = {"idx": 0, "score": 0, "total": len(questions)}
+
+        def show_question():
+            for w in win.winfo_children():
+                w.destroy()
+            idx = state["idx"]
+            if idx >= state["total"]:
+                show_result()
+                return
+            _, qtxt, a, b, c, d, correct = questions[idx]
+
+            tk.Label(win, text=f"Question {idx+1} of {state['total']}",
+                    bg="white", fg="#888888", font=("Helvetica", 10)).pack(anchor="w", padx=30, pady=(20, 4))
+            tk.Label(win, text=qtxt, bg="white", fg="#0d0d0d",
+                    font=("Helvetica", 13, "bold"), wraplength=520,
+                    justify="left").pack(anchor="w", padx=30, pady=(0, 16))
+
+            chosen = tk.StringVar()
+            for label, text in zip(["A","B","C","D"], [a, b, c, d]):
+                tk.Radiobutton(win, text=f"{label}.  {text}", variable=chosen,
+                            value=label, bg="white", font=("Helvetica", 11),
+                            activebackground="white",
+                            selectcolor="white").pack(anchor="w", padx=40, pady=3)
+
+            feedback = tk.Label(win, text="", bg="white", font=("Helvetica", 11, "bold"))
+            feedback.pack(pady=8)
+
+            def submit():
+                ans = chosen.get()
+                if not ans:
+                    messagebox.showwarning("No answer", "Please select an option.", parent=win)
+                    return
+                if ans == correct:
+                    state["score"] += 1
+                    feedback.config(text="✔  Correct!", fg="green")
+                else:
+                    feedback.config(text=f"✘  Wrong. Correct answer: {correct}", fg="red")
+                submit_btn.config(state="disabled")
+                win.after(1200, lambda: [state.update({"idx": state["idx"]+1}), show_question()])
+
+            submit_btn = tk.Button(win, text="Submit Answer", bg="#0d0d0d", fg="white",
+                                font=("Helvetica", 11, "bold"), relief="flat",
+                                padx=20, pady=6, command=submit)
+            submit_btn.pack(pady=4)
+
+        def show_result():
+            for w in win.winfo_children():
+                w.destroy()
+            pct = int(state["score"] / state["total"] * 100)
+            tk.Label(win, text="Quiz Complete!", bg="white",
+                    font=("Helvetica", 18, "bold")).pack(pady=(40, 10))
+            tk.Label(win, text=f"{state['score']} / {state['total']}  ({pct}%)",
+                    bg="white", font=("Helvetica", 24, "bold"),
+                    fg="green" if pct >= 70 else ("orange" if pct >= 40 else "red")).pack()
+            tk.Button(win, text="Try Again",
+                    command=lambda: [state.update({"idx":0,"score":0}), show_question()]
+                    ).pack(pady=10)
+            tk.Button(win, text="Close", command=win.destroy).pack()
+
+        show_question()
+        
+        
+        
+            
 
 
 
