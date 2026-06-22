@@ -323,6 +323,8 @@ class appface:
         tk.Button(self.root,text="Quizzes",command=self.quiz_screen).pack(pady=10)
         
         tk.Button(self.root,text="Calendar",command=self.calendar_screen).pack(pady=10)
+        
+        tk.Button(self.root,text="Reminders",command=self.reminders_screen).pack(pady=10)
     def notes_screen(self):
         clear_screen(self.root)
         self.root.configure(bg="white")
@@ -707,11 +709,77 @@ class appface:
  
         tk.Label(right_panel, text="Events this month", bg="#f5f5f5",
                  font=("Helvetica", 11, "bold")).pack(pady=(10,4))
+        
+        add_form = tk.LabelFrame(right_panel, text="add event", bg="#f5f5f5", font=("Helvetica", 9))
+        add_form.pack(fill="x", padx=6, pady=6)
+        
+        tk.Label(add_form, text="title", bg="#f5f5f5", font=("Helvetica", 9)).grid(row=0, column=0, sticky="w", padx=4)
+        event_name = tk.Entry(add_form, width=18, font=("Helvetica", 9))
+        event_name.grid(row=0, column=1, padx=4, pady=2)
+        
+        tk.Label(add_form, text="Date (YYYY-MM-DD):", bg="#f5f5f5", font=("Helvetica", 9)).grid(row=1, column=0, sticky="w", padx=4)
+        event_date = tk.Entry(add_form, width=18, font=("Helvetica", 9))
+        event_date.grid(row=1, column=1, padx=4, pady=2)
+        
+        event_date.insert(0, now.strftime("%Y-%m-%d"))
+        tk.Label(add_form, text="Type:", bg="#f5f5f5", font=("Helvetica", 9)).grid(row=2, column=0, sticky="w", padx=4)
+        type_var = tk.StringVar(value="exam")
+        
+        tk.OptionMenu(add_form, type_var, "exam", "assignment", "study", "other").grid(row=2, column=1, sticky="w", padx=4)
+        
+        def add_event():
+            event_name=event_name.get()
+            event_date=event_date.get()
+            event_type=type_var.get()
+            
+            if not event_name:
+                messagebox.showwarning("No title", "Enter an event title")
+                return
+            cursor.execute(
+                "INSERT INTO calendar_events (user_id, title, event_date, event_type) VALUES (?,?,?,?)",
+                (self.current_user_id, event_name, event_date, event_type))
+            self.db.commit()
+            event_name.delete(0, "end")
+            
+            tk.Button(add_form, text="Add Event", command=add_event,
+                  font=("Helvetica", 9)).grid(row=3, column=0, columnspan=2, pady=4)
             
         
+        
+        
+        
+    def reminders_screen(self):
+        from datetime import datetime
+        clear_screen(self.root)
+        self.root.configure(bg="white")
+        cursor = self.db.get_cursor()
+        
+        
+        tk.Label(self.root, text="Reminders", font=("Helvetica", 20, "bold")).pack(pady=10)
+        
+        form = tk.Frame(self.root, bg="white")
+        form.pack(fill="x", padx=20, pady=5)
+        
+        tk.Label(form, text="title:", bg="white").grid(row=0, column=0, sticky="w", pady=4)
+        
+        re_title = tk.Entry(form, width=40)
+        re_title.grid(row=0, column=1, padx=5, sticky="w")
+        
+        tk.Label(form, text="Date (YYYY-MM-DD):", bg="white").grid(row=1, column=0, sticky="w", pady=4)
+        re_date = tk.Entry(form, width=20)
+        re_date.grid(row=1, column=1, padx=5, sticky="w")
+
+        tk.Label(form, text="Time (HH:MM, 24hr):", bg="white").grid(row=2, column=0, sticky="w", pady=4)
+        
+        
+        status = tk.Label(self.root, text="", bg="white", fg="red", font=("Helvetica", 10))
+        status.pack()
+        
+        back= tk.Button(self.root, text="Back", command=self.home_screen)
+        back.pack(pady=5)
         
 
 
 root=tk.Tk()
 app = appface(root) 
-root.mainloop()   
+root.mainloop() 
