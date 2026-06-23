@@ -4,7 +4,12 @@ import sqlite3
 import os
 import hashlib
 from tkinter import messagebox 
-
+TYPE_COLORS = {
+    "exam":       "#FB9EBB",
+    "assignment": "#FEDCDB",
+    "study":      "#FFE6EE",
+    "other":      "#FEDCD2",
+}
 
 class database_setup:
     def __init__(self,db_path="study_app.db"):
@@ -81,6 +86,15 @@ class database_setup:
                 correct TEXT NOT NULL,
                 FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE)
                 """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS calendar_events (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id     INTEGER NOT NULL,
+            title       TEXT    NOT NULL,
+            event_date  TEXT    NOT NULL,
+            event_type  TEXT    NOT NULL DEFAULT 'other',
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)
+            """)
 
     def get_cursor(self):
         # returns a cursor so other parts of the app can query the database
@@ -594,7 +608,7 @@ class appface:
             load_questions()
 
         tk.Button(self.root, text="Back to Quizzes",
-                command=self.quizzes_screen).pack(pady=5)
+                command=self.quiz_screen).pack(pady=5)
         load_questions()
 
     def take_quiz(self, quiz_id, quiz_title):
@@ -701,11 +715,14 @@ class appface:
  
         cal_frame = tk.Frame(main, bg="white")
         cal_frame.pack(side="left", fill="both", expand=True)
- 
+
         # right panel events + add form
         right_panel = tk.Frame(main, width=260)
         right_panel.pack(side="right", fill="y", padx=(10,0))
         right_panel.pack_propagate(False)
+
+        event_list_frame = tk.Frame(right_panel, bg="#f5f5f5")
+        event_list_frame.pack(fill="both", expand=True)
  
         tk.Label(right_panel, text="Events this month", bg="#f5f5f5",
                  font=("Helvetica", 11, "bold")).pack(pady=(10,4))
@@ -717,7 +734,7 @@ class appface:
         event_name = tk.Entry(add_form, width=18, font=("Helvetica", 9))
         event_name.grid(row=0, column=1, padx=4, pady=2)
         
-        tk.Label(add_form, text="Date (YYYY-MM-DD):", bg="#f5f5f5", font=("Helvetica", 9)).grid(row=1, column=0, sticky="w", padx=4)
+        tk.Label(add_form, text="Date:", bg="#f5f5f5", font=("Helvetica", 9)).grid(row=1, column=0, sticky="w", padx=4)
         event_date = tk.Entry(add_form, width=18, font=("Helvetica", 9))
         event_date.grid(row=1, column=1, padx=4, pady=2)
         
@@ -725,29 +742,88 @@ class appface:
         tk.Label(add_form, text="Type:", bg="#f5f5f5", font=("Helvetica", 9)).grid(row=2, column=0, sticky="w", padx=4)
         type_var = tk.StringVar(value="exam")
         
-        tk.OptionMenu(add_form, type_var, "exam", "assignment", "study", "other").grid(row=2, column=1, sticky="w", padx=4)
+        tk.OptionMenu(add_form, type_var, "exam", "assignment", "study", "other").grid(row=2, column=1, sticky="w", padx=4)        
+        def load_event_list():
+            for w in event_list_frame.winfo_children():
+                w.destroy()
+            y, m = state["year"], state["month"]
+            cursor.execute(
+                "SELECT title, event_date, event_type FROM calendar_events "
+                "WHERE user_id=? AND event_date LIKE ? ORDER BY event_date",
+                (self.current_user_id, f"{y:04d}-{m:02d}-%"))
+            rows = cursor.fetchall()
+            if not rows:
+                tk.Label(event_list_frame, text="No events.", bg="#f5f5f5",
+                        fg="#888888", font=("Helvetica", 9)).pack(pady=6)
+                return
+            for ev_title, ev_date, ev_type in rows:
+                rf = tk.Frame(event_list_frame, bg="#f5f5f5")
+                rf.pack(fill="x", pady=1, padx=4)
+                tk.Label(rf, text=f"{ev_date[8:]}  {ev_title}", bg="#f5f5f5",
+                        font=("Helvetica", 9)).pack(side="left", padx=2)
+            
+                
+        def actual_calender():
+            for widgets in cal_frame.winfo_children():
+                widgets.destroy()
+            y, m = state["year"], state["month"]
+            month_lbl.config(text=datetime(y, m, 1).strftime("%B %Y"))
+
+            cursor.execute(
+                "SELECT event_date, event_type FROM calendar_events WHERE user_id=? AND event_date LIKE ?",
+                (self.current_user_id, f"{y:04d}-{m:02d}-%"))
+            event_map = {}
+            for ed, et in cursor.fetchall():
+                day = int(ed[8:])
+                event_map.setdefault(day, []).append(et)
+
+            for col, dn in enumerate(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]):
+                tk.Label(cal_frame, text=dn, bg="white", fg="#888888",
+                            font=("Helvetica", 9, "bold"), width=7).grid(row=0, column=col, pady=(0,2))
+
+            first_wd = date(y, m, 1).weekday()
+            days_in  = cal.monthrange(y, m)[1]
+            today    = now.day if (y == now.year and m == now.month) else -1
+
+            r, c = 1, first_wd
+            for d in range(1, days_in + 1):
+                evts = event_map.get(d, [])
+                first_type = evts[0] if evts else None
+                bg = "#bbdefb" if d == today else (TYPE_COLORS.get(first_type, "white") if first_type else "white")          
+                cell = tk.Frame(cal_frame, bg=bg, width=68, height=56, relief="solid", bd=1)
+                cell.grid(row=r, column=c, padx=1, pady=1)
+                cell.grid_propagate(False)
+                tk.Label(cell, text=str(d), bg=bg, fg="#0d0d0d",
+                            font=("Helvetica", 10, "bold" if d == today else "normal")).pack(anchor="nw", padx=3)
+                c += 1
+                if c == 7:
+                    c, r = 0, r + 1
+
+            load_event_list()    
         
         def add_event():
-            event_name=event_name.get()
-            event_date=event_date.get()
-            event_type=type_var.get()
+            name=event_name.get()
+            date=event_date.get()
+            type=type_var.get()
+            try:
+                datetime.strptime(date, "%Y-%m-%d")
+            except ValueError:
+                messagebox.showwarning("Bad date", "Use Year-Month-Day!")
+                return
             
-            if not event_name:
+            if not name:
                 messagebox.showwarning("No title", "Enter an event title")
                 return
             cursor.execute(
                 "INSERT INTO calendar_events (user_id, title, event_date, event_type) VALUES (?,?,?,?)",
-                (self.current_user_id, event_name, event_date, event_type))
+                (self.current_user_id, name, date, type))
             self.db.commit()
             event_name.delete(0, "end")
-            
-            tk.Button(add_form, text="Add Event", command=add_event,
-                  font=("Helvetica", 9)).grid(row=3, column=0, columnspan=2, pady=4)
-            
-        
-        
-        
-        
+            actual_calender()
+
+        tk.Button(add_form, text="Add Event", command=add_event,
+                font=("Helvetica", 9)).grid(row=3, column=0, columnspan=2, pady=4)
+        actual_calender()
     def reminders_screen(self):
         from datetime import datetime
         clear_screen(self.root)
@@ -765,11 +841,11 @@ class appface:
         re_title = tk.Entry(form, width=40)
         re_title.grid(row=0, column=1, padx=5, sticky="w")
         
-        tk.Label(form, text="Date (YYYY-MM-DD):", bg="white").grid(row=1, column=0, sticky="w", pady=4)
+        tk.Label(form, text="Date:", bg="white").grid(row=1, column=0, sticky="w", pady=4)
         re_date = tk.Entry(form, width=20)
         re_date.grid(row=1, column=1, padx=5, sticky="w")
 
-        tk.Label(form, text="Time (HH:MM, 24hr):", bg="white").grid(row=2, column=0, sticky="w", pady=4)
+        tk.Label(form, text="Time (24HR):", bg="white").grid(row=2, column=0, sticky="w", pady=4)
         
         
         status = tk.Label(self.root, text="", bg="white", fg="red", font=("Helvetica", 10))
