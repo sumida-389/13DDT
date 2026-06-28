@@ -11,6 +11,7 @@ TYPE_COLORS = {
     "other":      "#FEDCD2",
 }
 
+
 class database_setup:
     def __init__(self,db_path="study_app.db"):
         self.db_path = db_path
@@ -95,6 +96,17 @@ class database_setup:
             event_type  TEXT    NOT NULL DEFAULT 'other',
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)
             """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS reminders (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    INTEGER NOT NULL,
+                title      TEXT    NOT NULL,
+                remind_at  TEXT    NOT NULL,
+                fired      INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        """)
 
     def get_cursor(self):
         # returns a cursor so other parts of the app can query the database
@@ -110,7 +122,6 @@ def hash_password(password):
 
 
 
-
 def clear_screen(root):
     for widget in root.winfo_children():
         widget.destroy()
@@ -118,7 +129,7 @@ def clear_screen(root):
 class appface:
     def __init__(self,root):
         self.root = root
-        self.root.title("Study App")
+        self.root.title("Focalize")
         self.root.geometry("900x600")
         self.current_user_id = None # no one logged in yet
         self.current_username = None
@@ -139,9 +150,9 @@ class appface:
         tk.Label(left_frame, text=head, bg="#780606", fg="white",
                  font=("Helvetica", 30, "bold"), justify="left").place(x=44, y=200)
  
-        tk.Label(left_frame, text=subtext, bg="#780606", fg="#ccccff",
+        tk.Label(left_frame, text=subtext, bg="#780606", fg="white",
                  font=("Helvetica", 12), justify="left",
-                 wraplength=320).place(x=44, y=330)
+                 wraplength=320).place(x=44, y=272)
     
 
     def text_input(self, parent, placeholder, is_password=False):
@@ -178,8 +189,8 @@ class appface:
         clear_screen(self.root)
  
         self.left_panel(
-            head="study app",
-            subtext="the usbtext thing"
+            head="Focalize",
+            subtext="Knowledge at your fingertips."
         )
  
         # Right white frame where login goes
@@ -190,11 +201,11 @@ class appface:
         form.place(relx=0.5, rely=0.5, anchor="center")
  
         # name
-        tk.Label(form, text="Study App", bg="white", fg="#111111",
+        tk.Label(form, text="Focalize", bg="white", fg="#111111",
                  font=("Helvetica", 15, "bold")).pack(anchor="w", pady=(0, 30))
  
         # Heading
-        tk.Label(form, text="Welcome Back!", bg="white", fg="#0d0d0d",
+        tk.Label(form, text="Welcome Back!", bg="white", fg="black",
                  font=("Helvetica", 22, "bold")).pack(anchor="w")
  
         # Link to register
@@ -202,7 +213,7 @@ class appface:
         sub_text.pack(anchor="w", pady=(6, 24))
         tk.Label(sub_text, text="No account? ", bg="white", fg="#888888",
                  font=("Helvetica", 11)).pack(side="left")
-        tk.Label(sub_text, text="Register here", bg="white", fg="#2A2AE1",
+        tk.Label(sub_text, text="Register here", bg="white", fg="#780606",
                  font=("Helvetica", 11, "underline")).pack(side="left")
         sub_text.winfo_children()[1].bind("<Button-1>", lambda e: self.register_screen())
         
@@ -213,7 +224,7 @@ class appface:
         password_entry = self.text_input(form, "Password", is_password=True)
  
         # Status message (shows errors in red)
-        status = tk.Label(form, text="", bg="white", fg="red",
+        status = tk.Label(form, text="", fg="red",
                           font=("Helvetica", 11))
         status.pack(anchor="w", pady=(0, 8))
  
@@ -247,17 +258,17 @@ class appface:
                 status.config(text="Incorrect username or password.")
  
         # Login button
-        tk.Button(form, text="Login Now", bg="#0d0d0d", fg="white",
+        login_btn=tk.Label(form, text="Login", bg="#780606", fg="white",
                   font=("Helvetica", 13, "bold"), relief="flat", bd=0,
-                  width=30, height=2, activebackground="#2A2AE1",
-                  activeforeground="white", command=attempt_login).pack(pady=(4, 0))
-        
-
+                  width=30, height=2)
+        login_btn.pack(pady=(4, 0))
+        login_btn.bind("<Button-1>", lambda e: attempt_login())
+        print(type(login_btn))
     def register_screen(self):
         clear_screen(self.root)
         self.left_panel(
-            head="create account",
-            subtext="subtext for create account screen"
+            head="Create Account",
+            subtext=" "
         )
         right_frame = tk.Frame(self.root, bg="white")
         right_frame.pack(side="right", fill="both", expand=True)
@@ -265,7 +276,7 @@ class appface:
         form = tk.Frame(right_frame, bg="white")
         form.place(relx=0.5, rely=0.5, anchor="center")
  
-        tk.Label(form, text="Study App", bg="white", fg="#111111",
+        tk.Label(form, text="Focalize", bg="white", fg="#111111",
                  font=("Helvetica", 15, "bold")).pack(anchor="w", pady=(0, 30))
  
         tk.Label(form, text="create acc", bg="white", fg="#0d0d0d",
@@ -273,9 +284,9 @@ class appface:
         
         sub = tk.Frame(form, bg="white")
         sub.pack(anchor="w", pady=(6, 24))
-        tk.Label(sub, text="Already have acc?", bg="white", fg="#888888",
+        tk.Label(sub, text="Already registered?", bg="white", fg="#888888",
                  font=("Helvetica", 11)).pack(side="left")
-        tk.Label(sub, text="Login here", bg="white", fg="#2A2AE1",
+        tk.Label(sub, text="Login here", bg="white", fg="#780606",
                  font=("Helvetica", 11, "underline")).pack(side="left")
         sub.winfo_children()[1].bind("<Button-1>", lambda e: self.login_screen())
  
@@ -318,12 +329,13 @@ class appface:
             messagebox.showinfo("Success", f"Account created! Welcome, {username}.")
             self.login_screen()
             
-        tk.Button(form, text="create acc",
-                bg="#a6ba42", fg="white",
+        regis_btn=tk.Label(form, text="Register",
+                bg="#780606", fg="white",
                 font=("Helvetica", 13, "bold"),
-                relief="flat", bd=0, width=30, height=2,
-                activebackground="#2A2AE1", activeforeground="white",
-                command=attempt_register).pack(pady=(4, 0))
+                relief="flat", bd=0, width=30, height=2)
+        regis_btn.pack(pady=(4, 0))
+        regis_btn.bind("<Button-1>", lambda e: attempt_register())
+        
     def home_screen(self):
         clear_screen(self.root)
         self.root.configure(bg="white")
@@ -341,128 +353,464 @@ class appface:
         tk.Button(self.root,text="Reminders",command=self.reminders_screen).pack(pady=10)
     def notes_screen(self):
         clear_screen(self.root)
-        self.root.configure(bg="white")
-        notes_text = tk.Text(self.root, wrap="word", font=("Arial", 14))
-        notes_text.pack(fill="both", expand=True)
+        self.root.configure(bg="#f9f9f9")
         cursor = self.db.get_cursor()
-        cursor.execute(
-            "SELECT body FROM notes WHERE user_id=?",
-            (self.current_user_id,))
-        note = cursor.fetchone()
-        if note is None:
+
+        header = tk.Frame(self.root, bg="#780606")
+        header.pack(fill="x")
+        tk.Label(header, text="Notes!", bg="#780606", fg="white",
+                 font=("Helvetica", 18, "bold")).pack(side="left", padx=20, pady=12)
+        tk.Button(header, text="Back", bg="#5a0404",
+                  relief="flat", font=("Helvetica", 11),
+                  command=self.home_screen).pack(side="right", padx=16, pady=10)
+
+        new_bar = tk.Frame(self.root, bg="white", pady=10)
+        new_bar.pack(fill="x", padx=20, pady=(14, 4))
+        tk.Label(new_bar, text="Title:", bg="white",
+                 font=("Helvetica", 11)).pack(side="left")
+        new_title_entry = tk.Entry(new_bar, width=28, font=("Helvetica", 11),
+                                   relief="solid", bd=1)
+        new_title_entry.pack(side="left", padx=8, ipady=4)
+
+        status_lbl = tk.Label(self.root, text="", bg="#f9f9f9", fg="red",
+                              font=("Helvetica", 10))
+        status_lbl.pack()
+
+        def create_section():
+            title = new_title_entry.get().strip()
             cursor.execute(
                 "INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)",
-                (self.current_user_id, "My Notes", "")
+                (self.current_user_id, title, "")
             )
             self.db.commit()
-            note_body = ""
-        else:
-            note_body = note[0]
-        notes_text.insert("1.0", note_body)
+            new_title_entry.delete(0, "end")
+            status_lbl.config(text="")
+            load_sections()
+
+        tk.Button(new_bar, text="Create new set", bg="white", fg="#780606",
+          relief="flat", font=("Helvetica", 11, "bold"),bd=0,
+          padx=10, command=create_section).pack(side="left")
+
+        list_canvas = tk.Canvas(self.root, bg="#f9f9f9")
+        list_canvas.pack(fill="both", expand=True, padx=20, pady=10)
+        inner = tk.Frame(list_canvas, bg="#f9f9f9")
+        list_canvas.create_window((0, 0), window=inner, anchor="nw")
+        inner.bind("<Configure>", lambda e: list_canvas.configure(
+            scrollregion=list_canvas.bbox("all")))
+
+        def load_sections():
+            for widgets in inner.winfo_children():
+                widgets.destroy()
+            cursor.execute(
+                "SELECT id, title, body FROM notes WHERE user_id=? ORDER BY id",
+                (self.current_user_id,)
+            )
+            rows = cursor.fetchall()
+            if not rows:
+                tk.Label(inner, text="No note sections yet. Create one above!",
+                         bg="#f9f9f9", fg="#888888",
+                         font=("Helvetica", 12)).pack(pady=30)
+                return
+            for note_id, note_title, note_body in rows:
+                note_card = tk.Frame(inner, bg="white", relief="solid", bd=1)
+                note_card.pack(fill="x", pady=6)
+
+                preview = (note_body[:60] + "...") if len(note_body) > 60 else (note_body or "Empty section")
+
+                left = tk.Frame(note_card, bg="white")
+                left.pack(side="left", fill="both", expand=True, padx=14, pady=10)
+                tk.Label(left, text=note_title, bg="white", fg="#0d0d0d",
+                         font=("Helvetica", 13, "bold"), anchor="w").pack(anchor="w")
+                tk.Label(left, text=preview, bg="white", fg="#888888",
+                         font=("Helvetica", 10), anchor="w").pack(anchor="w")
+
+                def open_section(nid=note_id, ntitle=note_title):
+                    self.note_edit_screen(nid, ntitle)
+
+                def delete_section(nid=note_id, ntitle=note_title):
+                    if messagebox.askyesno("Delete", f'Delete "{ntitle}"?'):
+                        cursor.execute("DELETE FROM notes WHERE id=?", (nid,))
+                        self.db.commit()
+                        load_sections()
+
+                note_card.bind("<Button-1>", lambda e, f=open_section: f())
+                left.bind("<Button-1>", lambda e, f=open_section: f())
+
+                btn_frame = tk.Frame(note_card, bg="white")
+                btn_frame.pack(side="right", padx=10)
+                tk.Button(btn_frame, text="Open", bg="#780606", fg="white",
+                          relief="flat", font=("Helvetica", 10),
+                          padx=8, command=open_section).pack(pady=2)
+                tk.Button(btn_frame, text="Delete", fg="red", bg="white",
+                          relief="flat", font=("Helvetica", 10),
+                          command=delete_section).pack(pady=2)
+
+        load_sections()
+
+    def note_edit_screen(self, note_id, note_title):
+        clear_screen(self.root)
+        self.root.configure(bg="white")
+        cursor = self.db.get_cursor()
+
+        header = tk.Frame(self.root, bg="#780606")
+        header.pack(fill="x")
+        header_lbl = tk.Label(header, text=note_title, bg="#780606", fg="white",
+                              font=("Helvetica", 16, "bold"))
+        header_lbl.pack(side="left", padx=20, pady=12)
+        tk.Button(header, text="Back to Notes", bg="#5a0404", fg="white",
+                  relief="flat", font=("Helvetica", 11),
+                  command=self.notes_screen).pack(side="right", padx=16, pady=10)
+
+        text_frame = tk.Frame(self.root, bg="white")
+        text_frame.pack(fill="both", expand=True)
+
+        notes_text = tk.Text(text_frame, wrap="word", font=("Helvetica", 13),
+                             relief="flat", bd=0, padx=20, pady=16)
+        notes_text.pack(side="left", fill="both", expand=True)
+
+        sb = tk.Scrollbar(text_frame, command=notes_text.yview)
+        sb.pack(side="right", fill="y")
+        notes_text.config(yscrollcommand=sb.set)
+
+        cursor.execute("SELECT body FROM notes WHERE id=?", (note_id,))
+        existing = cursor.fetchone()
+        if existing:
+            notes_text.insert("1.0", existing[0])
+
+        save_bar = tk.Frame(self.root, bg="#f5f5f5")
+        save_bar.pack(fill="x")
+        save_status = tk.Label(save_bar, text="", bg="#f5f5f5", fg="green",
+                               font=("Helvetica", 10))
+        save_status.pack(side="left", padx=14)
+
         def save_note():
             new_body = notes_text.get("1.0", "end-1c")
             cursor.execute(
-                "UPDATE notes SET body=? WHERE user_id=?",
-                (new_body, self.current_user_id)
+                "UPDATE notes SET body=? WHERE id=?",
+                (new_body, note_id)
             )
             self.db.commit()
-            messagebox.showinfo("Saved", "Your notes have been saved.")
-        save_button = tk.Button(self.root, text="Save Notes", command=save_note)
-        save_button.pack(pady=10)
-        back_button = tk.Button(self.root, text="Back", command=self.home_screen)
-        back_button.pack(pady=5)
+        notes_text.bind("<KeyRelease>", save_note)
+        tk.Button(save_bar, text="Save", bg="#780606", fg="white",
+                  relief="flat", font=("Helvetica", 11, "bold"),
+                  padx=14, pady=6, command=save_note).pack(side="right", padx=14, pady=8)
         
     def flashcards_screen(self):
         clear_screen(self.root)
-        self.root.configure(bg="white")
-        cursor=self.db.get_cursor()
-        cursor.execute("SELECT id FROM decks WHERE user_id=?",
-                        (self.current_user_id,))
-        deck = cursor.fetchone()
-        if deck is None:
+        self.root.configure(bg="#f9f9f9")
+        cursor = self.db.get_cursor()
+
+        header = tk.Frame(self.root, bg="#780606")
+        header.pack(fill="x")
+        tk.Label(header, text="Flashcard Sets", bg="#780606", fg="white",
+                 font=("Helvetica", 18, "bold")).pack(side="left", padx=20, pady=12)
+        tk.Button(header, text="Back", bg="#5a0404", fg="white",
+                  relief="flat", font=("Helvetica", 11),
+                  command=self.home_screen).pack(side="right", padx=16, pady=10)
+
+        new_bar = tk.Frame(self.root, bg="white", pady=10)
+        new_bar.pack(fill="x", padx=20, pady=(14, 4))
+        tk.Label(new_bar, text="New set name:", bg="white",
+                 font=("Helvetica", 11)).pack(side="left")
+        new_deck_entry = tk.Entry(new_bar, width=28, font=("Helvetica", 11),
+                                  relief="solid", bd=1)
+        new_deck_entry.pack(side="left", padx=8, ipady=4)
+
+        status_lbl = tk.Label(self.root, text="", bg="#f9f9f9", fg="red",
+                              font=("Helvetica", 10))
+        status_lbl.pack()
+
+        def create_deck():
+            name = new_deck_entry.get().strip()
+            if not name:
+                status_lbl.config(text="Enter a set name.")
+                return
             cursor.execute(
                 "INSERT INTO decks (user_id, name) VALUES (?, ?)",
-                (self.current_user_id, "My flashcards")
+                (self.current_user_id, name)
             )
             self.db.commit()
-            deck_id= cursor.lastrowid
-        else:
-            deck_id = deck[0]
-        tk.Label(self.root,text="flashcards").pack(pady=20)
-        
-        flash_frame = tk.Frame(self.root, bg="white")
-        flash_frame.pack(pady=10)
-        
-        question_entry=tk.Entry(flash_frame,width=40)
-        question_entry.grid(row=0, column=0, padx=5)
-        
-        answer_entry=tk.Entry(flash_frame,width=40)
-        answer_entry.grid(row=0, column=1, padx=5)
-        
-        cards_frame=tk.Frame(self.root, bg="white")
-        cards_frame.pack(pady=10)
-        
-        
-        
-        
-        def load_flashcards():
-            #clear old cards
-            for widget in cards_frame.winfo_children():
-                widget.destroy()
-                
-            cursor.execute("SELECT front, back FROM flashcards WHERE deck_id=?",(deck_id,))
-            for question, answer in cursor.fetchall():
-                card = tk.Frame(cards_frame,bg="#f0f0f0",width=300,
-                height=150,relief="solid",bd=1)
-                card.pack(pady=10)
-                question_label = tk.Label(card,text=question)
-                question_label.pack(pady=10)
-                state = {"answer": False}
-            
-                def flip_card(event,lbl=question_label,q=question,a=answer,s=state):
-                    if s["answer"]:
-                        lbl.config(text=q)
-                    else:
-                        lbl.config(text=a)  
+            new_deck_entry.delete(0, "end")
+            status_lbl.config(text="")
+            load_decks()
 
-                    s["answer"] = not s["answer"]
-                card.bind("<Button-1>", flip_card)
-                question_label.bind("<Button-1>", flip_card) 
-        def add_flashcard():
-            question = question_entry.get().strip()
-            answer = answer_entry.get().strip()
+        tk.Button(new_bar, text="Create Set", bg="#780606", fg="white",
+                  relief="flat", font=("Helvetica", 11, "bold"),
+                  padx=10, command=create_deck).pack(side="left")
 
-            if not question or not answer:
-                return
+        list_frame = tk.Frame(self.root, bg="#f9f9f9")
+        list_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
+        def load_decks():
+            for widgets in list_frame.winfo_children():
+                widgets.destroy()
             cursor.execute(
-                """
-                INSERT INTO flashcards
-                (deck_id, user_id, front, back)
-                VALUES (?, ?, ?, ?)
-                """,
-                (
-                    deck_id,
-                    self.current_user_id,
-                    question,
-                    answer
-                )
+                "SELECT id, name FROM decks WHERE user_id=? ORDER BY id",
+                (self.current_user_id,)
             )
+            decks = cursor.fetchall()
+            if not decks:
+                tk.Label(list_frame, text="No sets yet. Create one above!",
+                         bg="#f9f9f9", fg="#888888",
+                         font=("Helvetica", 12)).pack(pady=30)
+                return
+            for deck_id, deck_name in decks:
+                cursor.execute("SELECT COUNT(*) FROM flashcards WHERE deck_id=?", (deck_id,))
+                count = cursor.fetchone()[0]
 
+                deck_card = tk.Frame(list_frame, bg="white", relief="solid", bd=1)
+                deck_card.pack(fill="x", pady=6)
+
+                left = tk.Frame(deck_card, bg="white")
+                left.pack(side="left", fill="both", expand=True, padx=14, pady=12)
+                tk.Label(left, text=deck_name, bg="white", fg="#0d0d0d",
+                         font=("Helvetica", 13, "bold"), anchor="w").pack(anchor="w")
+                tk.Label(left, text=f"{count} card{'s' if count != 1 else ''}",
+                         bg="white", fg="#888888",
+                         font=("Helvetica", 10), anchor="w").pack(anchor="w")
+
+                btn_frame = tk.Frame(deck_card, bg="white")
+                btn_frame.pack(side="right", padx=10, pady=8)
+
+                tk.Button(btn_frame, text="Edit",
+                          bg="#444444", fg="white", relief="flat",
+                          font=("Helvetica", 10), padx=8,
+                          command=lambda did=deck_id, dname=deck_name:
+                          self.deck_edit_screen(did, dname)).pack(side="left", padx=4)
+
+                tk.Button(btn_frame, text="Study",
+                          bg="#780606", fg="white", relief="flat",
+                          font=("Helvetica", 10, "bold"), padx=8,
+                          command=lambda did=deck_id, dname=deck_name:
+                          self.study_deck(did, dname)).pack(side="left", padx=4)
+
+                tk.Button(btn_frame, text="Delete",
+                          fg="red", bg="white", relief="flat",
+                          font=("Helvetica", 10),
+                          command=lambda did=deck_id, dname=deck_name:
+                          delete_deck(did, dname)).pack(side="left", padx=4)
+
+        def delete_deck(deck_id, deck_name):
+            if messagebox.askyesno("Delete", f'Delete set "{deck_name}" and all its cards?'):
+                cursor.execute("DELETE FROM decks WHERE id=?", (deck_id,))
+                self.db.commit()
+                load_decks()
+
+        load_decks()
+
+    def deck_edit_screen(self, deck_id, deck_name):
+        clear_screen(self.root)
+        self.root.configure(bg="#f9f9f9")
+        cursor = self.db.get_cursor()
+
+        header = tk.Frame(self.root, bg="#780606")
+        header.pack(fill="x")
+        tk.Label(header, text=deck_name, bg="#780606", fg="white",
+                 font=("Helvetica", 16, "bold")).pack(side="left", padx=20, pady=12)
+        tk.Button(header, text="Back to Sets", bg="#5a0404", fg="white",
+                  relief="flat", font=("Helvetica", 11),
+                  command=self.flashcards_screen).pack(side="right", padx=16, pady=10)
+
+        add_frame = tk.Frame(self.root, bg="white", relief="solid", bd=1)
+        add_frame.pack(fill="x", padx=20, pady=14)
+        tk.Label(add_frame, text="Add a card", bg="white",
+                 font=("Helvetica", 12, "bold")).grid(row=0, column=0, columnspan=2,
+                                                       sticky="w", padx=14, pady=(10, 4))
+        tk.Label(add_frame, text="Front (question):", bg="white",
+                 font=("Helvetica", 11)).grid(row=1, column=0, sticky="w", padx=14, pady=4)
+        front_entry = tk.Entry(add_frame, width=40, font=("Helvetica", 11),
+                               relief="solid", bd=1)
+        front_entry.grid(row=1, column=1, padx=14, pady=4, ipady=4, sticky="w")
+
+        tk.Label(add_frame, text="Back (answer):", bg="white",
+                 font=("Helvetica", 11)).grid(row=2, column=0, sticky="w", padx=14, pady=4)
+        back_entry = tk.Entry(add_frame, width=40, font=("Helvetica", 11),
+                              relief="solid", bd=1)
+        back_entry.grid(row=2, column=1, padx=14, pady=4, ipady=4, sticky="w")
+
+        add_status = tk.Label(add_frame, text="", bg="white", fg="red",
+                              font=("Helvetica", 10))
+        add_status.grid(row=3, column=0, columnspan=2, sticky="w", padx=14)
+
+        def add_card():
+            front = front_entry.get().strip()
+            back = back_entry.get().strip()
+            if not front or not back:
+                add_status.config(text="Fill in both sides.", fg="red")
+                return
+            cursor.execute(
+                "INSERT INTO flashcards (deck_id, user_id, front, back) VALUES (?, ?, ?, ?)",
+                (deck_id, self.current_user_id, front, back)
+            )
             self.db.commit()
+            front_entry.delete(0, "end")
+            back_entry.delete(0, "end")
+            add_status.config(text="Card added!", fg="green")
+            self.root.after(1500, lambda: add_status.config(text=""))
+            load_cards()
 
-            question_entry.delete(0, "end")
-            answer_entry.delete(0, "end")
+        tk.Button(add_frame, text="Add Card", bg="#780606", fg="white",
+                  relief="flat", font=("Helvetica", 11, "bold"),
+                  padx=12, pady=5,
+                  command=add_card).grid(row=4, column=0, columnspan=2, pady=10)
 
-            load_flashcards()    
-            
-        tk.Button(self.root,text="Add Flashcard",
-        command=add_flashcard).pack(pady=5)
+        list_frame = tk.Frame(self.root, bg="#f9f9f9")
+        list_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
-        tk.Button(self.root,text="Back",
-                    command=self.home_screen).pack(pady=5)
+        def load_cards():
+            for widgets in list_frame.winfo_children():
+                widgets.destroy()
+            cursor.execute(
+                "SELECT id, front, back FROM flashcards WHERE deck_id=? ORDER BY id",
+                (deck_id,)
+            )
+            cards = cursor.fetchall()
+            if not cards:
+                tk.Label(list_frame, text="No cards yet. Add one above!",
+                         bg="#f9f9f9", fg="#888888",
+                         font=("Helvetica", 11)).pack(pady=20)
+                return
+            for card_id, front, back in cards:
+                row = tk.Frame(list_frame, bg="white", relief="solid", bd=1)
+                row.pack(fill="x", pady=3)
+                tk.Label(row, text=f"Q: {front}", bg="white",
+                         font=("Helvetica", 11, "bold"),
+                         anchor="w").pack(side="left", padx=12, pady=6)
+                tk.Label(row, text=f"A: {back}", bg="white", fg="#555555",
+                         font=("Helvetica", 11),
+                         anchor="w").pack(side="left", padx=6, pady=6)
+                tk.Button(row, text="Delete", fg="red", bg="white",
+                          relief="flat",
+                          command=lambda i=card_id: [
+                              cursor.execute("DELETE FROM flashcards WHERE id=?", (i,)),
+                              self.db.commit(), load_cards()
+                          ]).pack(side="right", padx=10)
 
-        load_flashcards()
+        load_cards()
+
+    def study_deck(self, deck_id, deck_name):
+        cursor = self.db.get_cursor()
+        cursor.execute(
+            "SELECT id, front, back FROM flashcards WHERE deck_id=? ORDER BY id",
+            (deck_id,)
+        )
+        all_cards = cursor.fetchall()
+
+        if not all_cards:
+            messagebox.showinfo("Empty Set", "This set has no cards yet.\nAdd some in Edit mode!")
+            return
+
+        win = tk.Toplevel(self.root)
+        win.title(f"Study: {deck_name}")
+        win.geometry("700x520")
+        win.configure(bg="#1a1a2e")
+        win.grab_set()
+
+        queue = list(all_cards)
+        state = {
+            "idx": 0,
+            "flipped": False,
+            "total": len(all_cards),
+        }
+
+        card_outer = tk.Frame(win, bg="#1a1a2e")
+        card_outer.pack(expand=True, fill="both", padx=40, pady=20)
+
+        card_frame = tk.Frame(card_outer, bg="white", relief="flat",
+                              width=560, height=240)
+        card_frame.pack(expand=True)
+        card_frame.pack_propagate(False)
+
+        card_label = tk.Label(card_frame, text="", bg="white", fg="#0d0d0d",
+                              font=("Helvetica", 17), wraplength=480,
+                              justify="center")
+        card_label.place(relx=0.5, rely=0.45, anchor="center")
+
+
+        btn_row = tk.Frame(win, bg="#1a1a2e")
+        btn_row.pack(pady=(0, 28))
+
+        def make_circle_btn(circle_frame, label, symbol, colour, command):
+            sub = tk.Frame(circle_frame, bg="#1a1a2e")
+            sub.pack(side="left", padx=20)
+            size = 72
+            circle = tk.Canvas(sub, width=size, height=size,highlightthickness=0, bg="#1a1a2e")
+            circle.pack()
+            circle.create_oval(4, 4, size - 4, size - 4, fill=colour, outline="")
+            circle.create_text(size // 2, size // 2, text=symbol,
+                               font=("Helvetica", 22), fill="white")
+            circle.bind("<Button-1>", lambda e: command())
+            tk.Label(sub, text=label, bg="#1a1a2e", fg="#cccccc",
+                     font=("Helvetica", 9)).pack(pady=(4, 0))
+
+        def next_card():
+            if not queue:
+                show_summary()
+                return
+            current = queue[state["idx"] % len(queue)]
+            state["flipped"] = False
+            card_frame.config(bg="white")
+            card_label.config(text=current[1], bg="white", fg="#0d0d0d")
+
+        def flip_card(event=None):
+            if not queue:
+                return
+            current = queue[state["idx"] % len(queue)]
+            if not state["flipped"]:
+                card_frame.config(bg="#f0f4ff")
+                card_label.config(text=current[2], bg="#f0f4ff", fg="#1a1a8e")
+                state["flipped"] = True
+            else:
+                card_frame.config(bg="white")
+                card_label.config(text=current[1], bg="white", fg="#0d0d0d")
+                state["flipped"] = False
+
+        card_frame.bind("<Button-1>", flip_card)
+        card_label.bind("<Button-1>", flip_card)
+
+        def got_right():
+            if not queue:
+                return
+            queue.pop(state["idx"] % len(queue))
+            if queue:
+                state["idx"] = state["idx"] % len(queue)
+            next_card() if queue else show_summary()
+
+        def dont_know():
+            if not queue:
+                return
+            state["idx"] = (state["idx"] + 1) % len(queue)
+            next_card()
+
+        def got_wrong():
+            if not queue:
+                return
+            card = queue.pop(state["idx"] % len(queue))
+            queue.append(card)
+            state["idx"] = state["idx"] % len(queue)
+            next_card()
+    
+
+        make_circle_btn(btn_row, "Correct", "✓", "#27ae60", got_right)
+        make_circle_btn(btn_row, "Not Sure",   "?", "#e67e22", dont_know)
+        make_circle_btn(btn_row, "Incorrent",  "✗", "#c0392b", got_wrong)
+
+        def show_summary():
+            for widgets in win.winfo_children():
+                widgets.destroy()
+            win.configure(bg="#1a1a2e")
+            tk.Label(win, text="Session Complete!", bg="#1a1a2e", fg="white",
+                     font=("Helvetica", 22, "bold")).pack(pady=(60, 10))
+            tk.Button(win, text="Study Again",
+                      bg="#780606", fg="white", relief="flat",
+                      font=("Helvetica", 13, "bold"), padx=20, pady=8,
+                      command=lambda: [win.destroy(),
+                                       self.study_deck(deck_id, deck_name)]).pack(pady=20)
+            tk.Button(win, text="Close", bg="#333333", fg="white", relief="flat",
+                      font=("Helvetica", 11), padx=16, pady=6,
+                      command=win.destroy).pack()
+
+        next_card()
         
     def quiz_screen(self):  
         clear_screen(self.root)
@@ -496,8 +844,8 @@ class appface:
         list_frame = tk.Frame(self.root, bg="white")
         list_frame.pack(fill="both", expand=True, padx=20, pady=10)
         def refresh_quiz_list():
-            for w in list_frame.winfo_children():
-                w.destroy()
+            for widgets in list_frame.winfo_children():
+                widgets.destroy()
             cursor.execute("SELECT id, title FROM quizzes WHERE user_id=?",
                            (self.current_user_id,))
             quizzes = cursor.fetchall()
@@ -510,7 +858,7 @@ class appface:
                 row.pack(fill="x", pady=4)
                 tk.Label(row, text=qtitle, bg="#f0f0f0",
                          font=("Helvetica", 12)).pack(side="left", padx=10, pady=8)
-                tk.Button(row, text="Edit / Add Questions",
+                tk.Button(row, text="Edit Quiz",
                           command=lambda i=qid, t=qtitle: self.quiz_edit_screen(i, t)
                           ).pack(side="left", padx=5)
                 tk.Button(row, text="Take Quiz",
@@ -548,7 +896,7 @@ class appface:
             e.grid(row=i, column=1, padx=5, pady=2, sticky="w")
             fields[label] = e
 
-        tk.Label(form, text="Correct (A-D):", bg="white", width=12,
+        tk.Label(form, text="Correct Answer:", bg="white", width=12,
                 anchor="w").grid(row=5, column=0, sticky="w")
         correct_var = tk.StringVar(value="A")
         tk.OptionMenu(form, correct_var, "A", "B", "C", "D").grid(row=5, column=1, sticky="w", padx=5)
@@ -557,20 +905,20 @@ class appface:
         status.pack()
 
         def add_question():
-            q  = fields["Question"].get().strip()
-            a  = fields["Option A"].get().strip()
-            b  = fields["Option B"].get().strip()
-            c  = fields["Option C"].get().strip()
-            d  = fields["Option D"].get().strip()
+            ques  = fields["Question"].get().strip()
+            a_opt  = fields["Option A"].get().strip()
+            b_opt  = fields["Option B"].get().strip()
+            c_opt  = fields["Option C"].get().strip()
+            d_opt  = fields["Option D"].get().strip()
             ans = correct_var.get().upper()
-            if not all([q, a, b, c, d]):
+            if not all([ques, a_opt, b_opt, c_opt, d_opt]):
                 status.config(text="Please fill in all fields.")
                 return
             cursor.execute("""
                 INSERT INTO quiz_questions
                 (quiz_id, question_text, option_a, option_b, option_c, option_d, correct)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (quiz_id, q, a, b, c, d, ans))
+            """, (quiz_id, ques, a_opt, b_opt, c_opt, d_opt, ans))
             self.db.commit()
             for e in fields.values():
                 e.delete(0, "end")
@@ -584,8 +932,8 @@ class appface:
         q_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
         def load_questions():
-            for w in q_frame.winfo_children():
-                w.destroy()
+            for widgets in q_frame.winfo_children():
+                widgets.destroy()
             cursor.execute(
                 "SELECT id, question_text, correct FROM quiz_questions WHERE quiz_id=?",
                 (quiz_id,))
@@ -619,7 +967,7 @@ class appface:
         """, (quiz_id,))
         questions = cursor.fetchall()
         if not questions:
-            messagebox.showinfo("Empty Quiz", "This quiz has no questions yet.")
+            messagebox.showinfo("Empty Quiz", "This quiz is empty!")
             return
 
         win = tk.Toplevel(self.root)
@@ -631,16 +979,14 @@ class appface:
         state = {"idx": 0, "score": 0, "total": len(questions)}
 
         def show_question():
-            for w in win.winfo_children():
-                w.destroy()
+            for widgets in win.winfo_children():
+                widgets.destroy()
             idx = state["idx"]
             if idx >= state["total"]:
                 show_result()
                 return
             _, qtxt, a, b, c, d, correct = questions[idx]
 
-            tk.Label(win, text=f"Question {idx+1} of {state['total']}",
-                    bg="white", fg="#888888", font=("Helvetica", 10)).pack(anchor="w", padx=30, pady=(20, 4))
             tk.Label(win, text=qtxt, bg="white", fg="#0d0d0d",
                     font=("Helvetica", 13, "bold"), wraplength=520,
                     justify="left").pack(anchor="w", padx=30, pady=(0, 16))
@@ -648,23 +994,18 @@ class appface:
             chosen = tk.StringVar()
             for label, text in zip(["A","B","C","D"], [a, b, c, d]):
                 tk.Radiobutton(win, text=f"{label}.  {text}", variable=chosen,
-                            value=label, bg="white", font=("Helvetica", 11),
-                            activebackground="white",
-                            selectcolor="white").pack(anchor="w", padx=40, pady=3)
+                            value=label, bg="white", font=("Helvetica", 11)).pack(anchor="w", padx=40, pady=3)
 
             feedback = tk.Label(win, text="", bg="white", font=("Helvetica", 11, "bold"))
             feedback.pack(pady=8)
 
             def submit():
                 ans = chosen.get()
-                if not ans:
-                    messagebox.showwarning("No answer", "Please select an option.", parent=win)
-                    return
                 if ans == correct:
                     state["score"] += 1
                     feedback.config(text="✔  Correct!", fg="green")
                 else:
-                    feedback.config(text=f"✘  Wrong. Correct answer: {correct}", fg="red")
+                    feedback.config(text=f"✘  Wrong. The correct answer is {correct}", fg="red")
                 submit_btn.config(state="disabled")
                 win.after(1200, lambda: [state.update({"idx": state["idx"]+1}), show_question()])
 
@@ -674,19 +1015,12 @@ class appface:
             submit_btn.pack(pady=4)
 
         def show_result():
-            for w in win.winfo_children():
-                w.destroy()
-            pct = int(state["score"] / state["total"] * 100)
+            for widgets in win.winfo_children():
+                widgets.destroy()
             tk.Label(win, text="Quiz Complete!", bg="white",
                     font=("Helvetica", 18, "bold")).pack(pady=(40, 10))
-            tk.Label(win, text=f"{state['score']} / {state['total']}  ({pct}%)",
-                    bg="white", font=("Helvetica", 24, "bold"),
-                    fg="green" if pct >= 70 else ("orange" if pct >= 40 else "red")).pack()
-            tk.Button(win, text="Try Again",
-                    command=lambda: [state.update({"idx":0,"score":0}), show_question()]
-                    ).pack(pady=10)
+            tk.Label(win, text=f"{state['score']} / {state['total']}",).pack()
             tk.Button(win, text="Close", command=win.destroy).pack()
-
         show_question()
         
     def calendar_screen(self):
@@ -744,8 +1078,8 @@ class appface:
         
         tk.OptionMenu(add_form, type_var, "exam", "assignment", "study", "other").grid(row=2, column=1, sticky="w", padx=4)        
         def load_event_list():
-            for w in event_list_frame.winfo_children():
-                w.destroy()
+            for widgets in event_list_frame.winfo_children():
+                widgets.destroy()
             y, m = state["year"], state["month"]
             cursor.execute(
                 "SELECT title, event_date, event_type FROM calendar_events "
@@ -842,19 +1176,77 @@ class appface:
         re_title.grid(row=0, column=1, padx=5, sticky="w")
         
         tk.Label(form, text="Date:", bg="white").grid(row=1, column=0, sticky="w", pady=4)
+        tk.Label(form, text="(YYYY-MM-DD)", bg="white", fg="#888888", font=("Helvetica", 8)).grid(row=2, column=0, sticky="w")
         re_date = tk.Entry(form, width=20)
         re_date.grid(row=1, column=1, padx=5, sticky="w")
 
-        tk.Label(form, text="Time (24HR):", bg="white").grid(row=2, column=0, sticky="w", pady=4)
+        tk.Label(form, text="Time:", bg="white").grid(row=3, column=0, sticky="w", pady=4)
+        tk.Label(form, text="(24hr HH:MM)", bg="white", fg="#888888", font=("Helvetica", 8)).grid(row=4, column=0, sticky="w")
+        re_time = tk.Entry(form, width=20)
+        re_time.grid(row=3, column=1, padx=5, sticky="w")
         
-        
-        status = tk.Label(self.root, text="", bg="white", fg="red", font=("Helvetica", 10))
+        status =tk.Label(self.root, text="", bg="white", fg="red", font=("Helvetica", 10))
         status.pack()
         
         back= tk.Button(self.root, text="Back", command=self.home_screen)
         back.pack(pady=5)
         
-
+        def add_reminder():
+            rem_titile = re_title.get().strip()
+            rem_date= re_date.get().strip()
+            rem_time= re_time.get().strip()
+            
+            if not rem_titile:
+                status.config(text="Enter a reminder title.")
+                return
+            try:
+                remind_dt = datetime.strptime(f"{rem_date} {rem_time}", "%Y-%m-%d %H:%M")
+            except ValueError:
+                status.config(text="Invalid date or time.")
+                return
+            if remind_dt <= datetime.now():
+                status.config(text="Please set a future date/time.")
+                return
+            status.config(text="")
+            rat = remind_dt.strftime("%Y-%m-%d %H:%M")
+            cursor.execute(
+                "INSERT INTO reminders (user_id, rem_titile, remind_at) VALUES (?,?,?)",
+                (self.current_user_id,rem_titile, rat))
+            self.db.commit()
+            re_title.delete(0, "end")
+            messagebox.showinfo("Reminder Set!", f"Reminder set for {rat}.\nThe app must be open to receive notifications.")
+            load_reminders()
+ 
+            
+        tk.Button(self.root, text="Set Reminder", command=add_reminder,
+                    bg="#0d0d0d", fg="white", font=("Helvetica", 11, "bold"),
+                    relief="flat", padx=10, pady=5).pack(pady=6)
+        list_frame = tk.Frame(self.root, bg="white")
+        list_frame.pack(fill="both", expand=True, padx=20, pady=5)
+        def load_reminders():
+            for widegts in list_frame.winfo_children():
+                widegts.destroy()
+            now_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+            cursor.execute(
+                "SELECT id, title, remind_at, fired FROM reminders WHERE user_id=? ORDER BY fired ASC, remind_at ASC",
+                (self.current_user_id,))
+            rows = cursor.fetchall()
+            if not rows:
+                tk.Label(list_frame, text="No reminders set!", bg="white", fg="#888888").pack(pady=10)
+                return
+            for reminder_id, reminder_title, reminder_at, fired in rows:
+                overdue = (reminder_at <= now_time and not fired)
+                bg = "#ffebee" if overdue else ("#eeeeee" if fired else "white")
+                row = tk.Frame(list_frame, bg=bg, relief="solid", bd=1)
+                row.pack(fill="x", pady=3)
+                icon = "✔" if fired else ("⚠" if overdue else "○")
+                tk.Label(row, text=icon, bg=bg, font=("Helvetica", 13)).pack(side="left", padx=8, pady=6)
+                tk.Label(row, text=f"{reminder_title}  —  {reminder_at}", bg=bg,
+                         font=("Helvetica", 11)).pack(side="left", padx=4)
+                tk.Button(row, text="Delete", fg="red", bg=bg, relief="flat",
+                          command=lambda i=reminder_id: [cursor.execute("DELETE FROM reminders WHERE id=?", (i,)),
+                                                         self.db.commit(), load_reminders()]).pack(side="right", padx=8)
+        load_reminders()
 
 root=tk.Tk()
 app = appface(root) 
