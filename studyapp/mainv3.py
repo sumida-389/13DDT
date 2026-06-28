@@ -506,8 +506,8 @@ class appface:
         list_frame = tk.Frame(self.root, bg="white")
         list_frame.pack(fill="both", expand=True, padx=20, pady=10)
         def refresh_quiz_list():
-            for w in list_frame.winfo_children():
-                w.destroy()
+            for widgets in list_frame.winfo_children():
+                widgets.destroy()
             cursor.execute("SELECT id, title FROM quizzes WHERE user_id=?",
                            (self.current_user_id,))
             quizzes = cursor.fetchall()
@@ -558,8 +558,6 @@ class appface:
             e.grid(row=i, column=1, padx=5, pady=2, sticky="w")
             fields[label] = e
 
-        tk.Label(form, text="Correct (A-D):", bg="white", width=12,
-                anchor="w").grid(row=5, column=0, sticky="w")
         correct_var = tk.StringVar(value="A")
         tk.OptionMenu(form, correct_var, "A", "B", "C", "D").grid(row=5, column=1, sticky="w", padx=5)
 
@@ -573,9 +571,6 @@ class appface:
             c  = fields["Option C"].get().strip()
             d  = fields["Option D"].get().strip()
             ans = correct_var.get().upper()
-            if not all([q, a, b, c, d]):
-                status.config(text="Please fill in all fields.")
-                return
             cursor.execute("""
                 INSERT INTO quiz_questions
                 (quiz_id, question_text, option_a, option_b, option_c, option_d, correct)
@@ -594,8 +589,8 @@ class appface:
         q_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
         def load_questions():
-            for w in q_frame.winfo_children():
-                w.destroy()
+            for widgets in q_frame.winfo_children():
+                widgets.destroy()
             cursor.execute(
                 "SELECT id, question_text, correct FROM quiz_questions WHERE quiz_id=?",
                 (quiz_id,))
@@ -628,9 +623,6 @@ class appface:
             FROM quiz_questions WHERE quiz_id=?
         """, (quiz_id,))
         questions = cursor.fetchall()
-        if not questions:
-            messagebox.showinfo("Empty Quiz", "This quiz has no questions yet.")
-            return
 
         win = tk.Toplevel(self.root)
         win.title(f"Quiz: {quiz_title}")
@@ -641,8 +633,8 @@ class appface:
         state = {"idx": 0, "score": 0, "total": len(questions)}
 
         def show_question():
-            for w in win.winfo_children():
-                w.destroy()
+            for widgets in win.winfo_children():
+                widgets.destroy()
             idx = state["idx"]
             if idx >= state["total"]:
                 show_result()
@@ -658,9 +650,7 @@ class appface:
             chosen = tk.StringVar()
             for label, text in zip(["A","B","C","D"], [a, b, c, d]):
                 tk.Radiobutton(win, text=f"{label}.  {text}", variable=chosen,
-                            value=label, bg="white", font=("Helvetica", 11),
-                            activebackground="white",
-                            selectcolor="white").pack(anchor="w", padx=40, pady=3)
+                            value=label, bg="white", font=("Helvetica", 11),).pack(anchor="w", padx=40, pady=3)
 
             feedback = tk.Label(win, text="", bg="white", font=("Helvetica", 11, "bold"))
             feedback.pack(pady=8)
@@ -684,17 +674,12 @@ class appface:
             submit_btn.pack(pady=4)
 
         def show_result():
-            for w in win.winfo_children():
-                w.destroy()
-            pct = int(state["score"] / state["total"] * 100)
+            for widgets in win.winfo_children():
+                widgets.destroy()
             tk.Label(win, text="Quiz Complete!", bg="white",
                     font=("Helvetica", 18, "bold")).pack(pady=(40, 10))
-            tk.Label(win, text=f"{state['score']} / {state['total']}  ({pct}%)",
-                    bg="white", font=("Helvetica", 24, "bold"),
-                    fg="green" if pct >= 70 else ("orange" if pct >= 40 else "red")).pack()
-            tk.Button(win, text="Try Again",
-                    command=lambda: [state.update({"idx":0,"score":0}), show_question()]
-                    ).pack(pady=10)
+            tk.Label(win, text=f"{state['score']} / {state['total']}",
+                    bg="white", font=("Helvetica", 24, "bold")).pack()
             tk.Button(win, text="Close", command=win.destroy).pack()
 
         show_question()
@@ -754,8 +739,8 @@ class appface:
         
         tk.OptionMenu(add_form, type_var, "exam", "assignment", "study", "other").grid(row=2, column=1, sticky="w", padx=4)        
         def load_event_list():
-            for w in event_list_frame.winfo_children():
-                w.destroy()
+            for widgets in event_list_frame.winfo_children():
+                widgets.destroy()
             y, m = state["year"], state["month"]
             cursor.execute(
                 "SELECT title, event_date, event_type FROM calendar_events "
