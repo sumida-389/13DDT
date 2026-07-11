@@ -4,6 +4,7 @@ import sqlite3
 import os
 import hashlib
 from tkinter import messagebox 
+
 TYPE_COLORS = {
     "exam":       "#FB9EBB",
     "assignment": "#FEDCDB",
@@ -17,13 +18,16 @@ RED_HOVER_COLOR="#400000"
 BLUE_HOVER_COLOR="#000026"
 class database_setup:
     def __init__(self,db_path="study_app.db"):
+        """Creates the database connection and sets up the database file."""
         self.db_path = db_path
-        self.connection = sqlite3.connect(db_path)#connect to the database file (creates it if it doesn't exist)
+        self.settings_win = None # Checks if the settings window is open
+        self.connection = sqlite3.connect(db_path)#Connect to the database file (creates it if it doesn't exist)
                 
     def create_tables(self): 
+        """Creates the tables in the database if they don't already exist."""
         cursor = self.connection.cursor() #cursor object to execute SQL commands
 
-        #users table
+        #Users table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +36,8 @@ class database_setup:
             )
         """)
 
-        #notes table
+        #Notes table
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notes (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,21 +45,23 @@ class database_setup:
                 title      TEXT    NOT NULL,
                 body       TEXT    NOT NULL DEFAULT '',
                 summary    TEXT    DEFAULT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE (user_id, title)
             )
         """)
 
-        #deck table
+        #Deck table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS decks (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id    INTEGER NOT NULL,
                 name       TEXT    NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE (user_id, name)
             )
         """)
         
-        #flashcards table
+        #Flashcards table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS flashcards (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,10 +71,11 @@ class database_setup:
                 back          TEXT    NOT NULL,
                 FOREIGN KEY (deck_id)  REFERENCES decks(id)  ON DELETE CASCADE,
                 FOREIGN KEY (user_id)  REFERENCES users(id)  ON DELETE CASCADE
+                
             )
         """)
         
-        #quiz + questions tables
+        #Quiz + questions tables
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quizzes (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,27 +132,30 @@ class database_setup:
         """)
 
     def get_cursor(self):
-        # returns a cursor so other parts of the app can query the database
+        """Returns a cursor so other parts of the app can query the database"""
         return self.connection.cursor()
  
     def commit(self):
-        # saves any changes made to the database
+        """Saves any changes made to the database"""
         self.connection.commit()
         
 
 def hash_password(password):
+    """Hashes the password using SHA-256 and returns the hexadecimal digest."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
 def clear_screen(root):
+    """Clears all widgets from the given root window."""
     for widget in root.winfo_children():
         widget.destroy()
 
 class appface:
     def __init__(self,root):
+        """Sets up the database and window"""
         self.root = root
         self.root.title("Focalize")
-        self.root.geometry("1000x700")
+        self.root.geometry("1100x700")
         self.current_user_id = None # no one logged in yet
         self.current_username = None
         self.left_panel("testing bigtxt", "testing small text")
@@ -154,6 +165,7 @@ class appface:
 
         
     def left_panel(self,head,subtext):
+        """`Creates the left panel with a heading and subtext."""
         left_frame = tk.Frame(self.root, bg=DARK_RED, width=400, height=400)
         left_frame.pack(side="left", fill="y")
         left_frame.pack_propagate(False)
@@ -170,6 +182,7 @@ class appface:
     
 
     def text_input(self, parent, placeholder, is_password=False):
+        """Creates the entry box for username and password + placeholder text """
         text_frame = tk.Frame(parent, bg="white")
         text_frame.pack(fill="x", pady=(0, 14))
  
@@ -183,6 +196,7 @@ class appface:
         underline.pack(fill="x")
 
         def on_click_field(event):
+            """When the user clicks on the field, it will clear the placeholder text and change the text color to black. If it's a password field, it will also hide the input with dots."""
             if user_pass.get() == placeholder:
                 user_pass.delete(0, "end")
                 user_pass.config(fg="#111111")
@@ -190,16 +204,18 @@ class appface:
                     user_pass.config(show="•")     # hide password with dots
             underline.config(bg="#2A2AE1")
         def unclick_field(event):
+            """When the user clicks away from the field, if it's empty it will put the placeholder text back and change the text color to gray"""
             if user_pass.get() == "":
                 user_pass.config(fg="#aaaaaa", show="")
                 user_pass.insert(0, placeholder)   # put placeholder back
-            underline.config(bg="#dddddd") 
+            underline.config(bg=GREY_BG) 
 
         user_pass.bind("<FocusIn>",  on_click_field) # when the user clicks on the field, it will clear the placeholder text and change the text color to black. If it's a password field, it will also hide the input with dots.
         user_pass.bind("<FocusOut>", unclick_field) # when the user clicks away from the field, if it's empty it will put the placeholder text back and change the text color to gray. It will also show the input if it's a password field.
         return user_pass
     
     def login_screen(self):
+        """Creates the login screen with username and password fields, a login button, and a link to the registration screen."""
         clear_screen(self.root)
  
         self.left_panel(
@@ -239,6 +255,7 @@ class appface:
  
         # What happens when Login is clicked
         def attempt_login():
+            """Checks the database for the given username and password."""
             username = username_entry.get().strip()
             password = password_entry.get().strip()
  
@@ -278,6 +295,7 @@ class appface:
 
         print(type(login_btn))
     def register_screen(self):
+        """Makes the registration screen with username and password fields, a register button, and a link to the login screen."""
         clear_screen(self.root)
         self.left_panel(
             head="Create Account",
@@ -311,6 +329,7 @@ class appface:
         status.pack(anchor="w", pady=(0, 8))
         
         def attempt_register():
+            """Tries to register new user with the username and password."""
             username = username_entry.get().strip()
             password = password_entry.get().strip()
             confirm  = confirm_entry.get().strip()
@@ -329,15 +348,18 @@ class appface:
                 status.config(text="Passwords do not match.")
                 return
             
-            cursor = self.db.get_cursor()
-            hashed = hash_password(password)
-            cursor.execute(
-                "INSERT INTO users (username, password) VALUES (?, ?)",
-                (username, hashed)
-            )
-            self.db.commit()   # save to database
-            messagebox.showinfo("Success", f"Account created! Welcome, {username}.")
-            self.login_screen()
+            try:
+                cursor = self.db.get_cursor()
+                hashed = hash_password(password)
+                cursor.execute(
+                    "INSERT INTO users (username, password) VALUES (?, ?)",
+                    (username, hashed)
+                )
+                self.db.commit()   # save to database
+                messagebox.showinfo("Success", f"Account created! Welcome, {username}.")
+                self.login_screen()
+            except sqlite3.IntegrityError:
+                status.config(text="Username already exists.")
             
         regis_btn=tk.Label(form, text="Register",
                 bg=DARK_RED, fg="white",
@@ -346,22 +368,256 @@ class appface:
         regis_btn.pack(pady=(4, 0))
         regis_btn.bind("<Button-1>", lambda e: attempt_register())
         
+        
+        
+        
+        
+        
+        
+        
     def home_screen(self):
+        """Creates the home screen with dashboard"""
+        from datetime import date
         clear_screen(self.root)
-        self.root.configure(bg="white")
-        tk.Label(self.root, text=f"Welcome, {self.current_username}",
-        font=("Helvetica", 20, "bold"),fg="white",bg=DARK_RED).pack(pady=20)
+        self.root.configure(bg=GREY_BG)
+        cursor=self.db.get_cursor()
+        def check_reminders():
+            """Checks the database(every 30sec) for any reminders that are due."""
+            from datetime import datetime
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            cursor.execute("""
+                SELECT id, rem_title
+                FROM reminders
+                WHERE user_id=?
+                AND remind_at<=?
+                AND fired=0
+            """, (self.current_user_id, now))
 
-        tk.Button( self.root,text="Open Notes",command=self.notes_screen).pack(pady=10)
+            reminders = cursor.fetchall()
+
+            for reminder_id, title in reminders:
+                messagebox.showinfo("Reminder", title)
+
+                cursor.execute(
+                    "UPDATE reminders SET fired=1 WHERE id=?",
+                    (reminder_id,)
+                )
+
+            self.db.commit()
+
+            self.root.after(30000, check_reminders)
+
+        check_reminders()
+                
+        #Header
+        header=tk.Frame(self.root,bg=DARK_RED)
+        header.pack(fill="x")
+        tk.Label(header, text=f"Welcome, {self.current_username}",
+                 font=("Helvetica", 20, "bold"), fg="white", bg=DARK_RED
+                 ).pack(side="left", padx=20, pady=16)
+        gear_lbl = tk.Label(header, text="⚙", bg=DARK_RED, fg="white",
+                             font=("Helvetica", 30), cursor="hand2")
+        gear_lbl.pack(side="right", padx=20, pady=16)
+        gear_lbl.bind("<Button-1>", lambda e: self.open_settings_sidebar())
+        gear_lbl.bind("<Enter>", lambda e: gear_lbl.config(fg="#dddddd"))
+        gear_lbl.bind("<Leave>", lambda e: gear_lbl.config(fg="white"))
+        #Dashboard
+        board = tk.Frame(self.root, bg=GREY_BG)
+        board.pack(fill="both", expand=True, padx=16, pady=14)
+        board.grid_columnconfigure(0, weight=1, uniform="col")
+        board.grid_columnconfigure(1, weight=1, uniform="col")
+        board.grid_rowconfigure(0, weight=3)
+        board.grid_rowconfigure(1, weight=3)
+        board.grid_rowconfigure(2, weight=2)
         
-        tk.Button(self.root,text="Flashcards",command=self.flashcards_screen).pack(pady=10)
+        def make_card(title, row, col, colspan=1, open_cmd=None):
+            """Creates a card with a title and an "Open" button."""
+            outer = tk.Frame(board, bg="white", relief="solid", bd=1)
+            outer.grid(row=row, column=col, columnspan=colspan, sticky="nsew", padx=8, pady=8)
+
+            card_head = tk.Frame(outer, bg=DARK_RED)
+            card_head.pack(fill="x")
+            tk.Label(card_head, text=title, bg=DARK_RED, fg="white",
+                     font=("Helvetica", 13, "bold")).pack(side="left", padx=12, pady=8)
+            if open_cmd:
+                open_lbl = tk.Label(card_head, text="Open", bg=DARK_RED, fg="white",
+                                     font=("Helvetica", 10), cursor="hand2")
+                open_lbl.pack(side="right", padx=12)
+                open_lbl.bind("<Button-1>", lambda e: open_cmd())
+                open_lbl.bind("<Enter>", lambda e: open_lbl.config(fg=NAVY_BLUE))
+                open_lbl.bind("<Leave>", lambda e: open_lbl.config(fg="white"))
+
+            body = tk.Frame(outer, bg="white")
+            body.pack(fill="both", expand=True, padx=12, pady=10)
+            return body
+        
+        
+        # Notes section
+        notes_body = make_card("Notes", 0, 0, open_cmd=self.notes_screen)
+        cursor.execute(
+            "SELECT id, title FROM notes WHERE user_id=? ORDER BY id DESC LIMIT 5",
+            (self.current_user_id,))
+        note_rows = cursor.fetchall()
+        if not note_rows:
+            tk.Label(notes_body, text="No notes yet!",
+                     bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
+        else:
+            for nid, ntitle in note_rows:
+                lbl = tk.Label(notes_body, text=f"{ntitle}", bg="white", fg="#0d0d0d",
+                                font=("Helvetica", 11), anchor="w", cursor="hand2")
+                lbl.pack(fill="x", pady=2)
+                lbl.bind("<Button-1>", lambda e, i=nid, t=ntitle: self.note_edit_screen(i, t))
+        
+        #Flashcards section
+        fc_body = make_card("Flashcards", 0, 1, open_cmd=self.flashcards_screen)
+        cursor.execute(
+            "SELECT id, name FROM decks WHERE user_id=? ORDER BY id DESC LIMIT 5",
+            (self.current_user_id,))
+        deck_rows = cursor.fetchall()
+        if not deck_rows:
+            tk.Label(fc_body, text="No flashcard sets yet!",
+                     bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
+        else:
+            for did, dname in deck_rows:
+                cursor.execute("SELECT COUNT(*) FROM flashcards WHERE deck_id=?", (did,))
+                ccount = cursor.fetchone()[0]
+                row = tk.Frame(fc_body, bg="white")
+                row.pack(fill="x", pady=2)
+                lbl = tk.Label(row, text=f"{dname}", bg="white", fg="#0d0d0d",
+                                font=("Helvetica", 11), anchor="w", cursor="hand2")
+                lbl.pack(side="left")
+                tk.Label(row, text=f"{ccount} card{'s' if ccount != 1 else ''}", bg="white",
+                         fg="#888888", font=("Helvetica", 9)).pack(side="right")
+                lbl.bind("<Button-1>", lambda e, i=did, t=dname: self.study_deck(i, t))
+        
+        #Quiz section
+        quiz_body = make_card("Quiz", 1, 0, open_cmd=self.quiz_screen)
+        cursor.execute("""
+            SELECT quiz_attempts.score, quiz_attempts.total,
+                quizzes.title, quizzes.id
+            FROM quiz_attempts
+            JOIN quizzes
+                ON quizzes.id = quiz_attempts.quiz_id
+            WHERE quiz_attempts.user_id = ?
+            ORDER BY quiz_attempts.id DESC
+            LIMIT 1
+            """, (self.current_user_id,))
+        last_attempt = cursor.fetchone()
+        if not last_attempt:
+            tk.Label(quiz_body, text="Take a quiz!",
+                     bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
+        else:
+            score, total, qtitle, qid=last_attempt
+            tk.Label(quiz_body, text=qtitle, bg="white", fg="#0d0d0d",
+                    font=("Helvetica", 12, "bold"), anchor="w").pack(anchor="w")
+            tk.Label(quiz_body, text=f"Latest score: {score} / {total}", bg="white",
+                    fg=NAVY_BLUE, font=("Helvetica", 14, "bold"), anchor="w"
+                    ).pack(anchor="w", pady=(4, 4))
+            if total > 0 and score == total:
+                note_txt="Perfect score! Can you get it again?"
+            else:
+                note_txt = "Can you beat this score?"
+            tk.Label(quiz_body, text=note_txt, bg="white", fg=DARK_RED,
+                     font=("Helvetica", 10), anchor="w",
+                     wraplength=260, justify="left").pack(anchor="w")
             
-        tk.Button(self.root,text="Quizzes",command=self.quiz_screen).pack(pady=10)
+        #Calender section
         
-        tk.Button(self.root,text="Calendar",command=self.calendar_screen).pack(pady=10)
+        cal_body = make_card("Calendar", 1, 1, open_cmd=self.calendar_screen)
+        today_str = date.today().strftime("%Y-%m-%d")
+        cursor.execute(
+            "SELECT title, event_date, event_type FROM calendar_events "
+            "WHERE user_id=? AND event_date=? ORDER BY id",
+            (self.current_user_id, today_str))
+        todays_events = cursor.fetchall()
+        if todays_events:
+            tk.Label(cal_body, text="Today", bg="white", fg="#888888",
+                     font=("Helvetica", 9, "bold")).pack(anchor="w")
+            for ev_title, ev_date, ev_type in todays_events:
+                colour = TYPE_COLORS.get(ev_type, "white")
+                row = tk.Frame(cal_body, bg=colour)
+                row.pack(fill="x", pady=2)
+                tk.Label(row, text=f"●  {ev_title}", bg=colour, fg="white",
+                         font=("Helvetica", 11), anchor="w").pack(side="left", padx=6, pady=4)
+                tk.Label(row, text=ev_type, bg=colour, fg="white",
+                         font=("Helvetica", 8), anchor="e").pack(side="right", padx=6)
+        else:
+            cursor.execute(
+                "SELECT title, event_date, event_type FROM calendar_events "
+                "WHERE user_id=? AND event_date>? ORDER BY event_date ASC LIMIT 5",
+                (self.current_user_id, today_str))
+            next_event = cursor.fetchone()
+            if next_event:
+                ev_title, ev_date, ev_type = next_event
+                colour = TYPE_COLORS.get(ev_type, "white")
+                tk.Label(cal_body, text="No events today. Next up:", bg="white",
+                         fg=DARK_RED, font=("Helvetica", 9)).pack(anchor="w")
+                row = tk.Frame(cal_body, bg=colour)
+                row.pack(fill="x", pady=4)
+                tk.Label(row, text=f"●  {ev_title}", bg=colour, fg="black",
+                         font=("Helvetica", 11, "bold"), anchor="w").pack(side="left", padx=6, pady=4)
+                tk.Label(row, text=ev_date, bg=colour, fg="black",
+                         font=("Helvetica", 9), anchor="e").pack(side="right", padx=6)
+            else:
+                tk.Label(cal_body, text="No upcoming events.", bg="white",
+                         fg=GREY_BG, font=("Helvetica", 10)).pack(pady=10)
         
-        tk.Button(self.root,text="Reminders",command=self.reminders_screen).pack(pady=10)
+        #Reminders section
+        rem_body = make_card("Reminders this month", 2, 0, colspan=2, open_cmd=self.reminders_screen)
+        month_prefix = date.today().strftime("%Y-%m")
+        cursor.execute(
+            "SELECT rem_title, remind_at, fired FROM reminders "
+            "WHERE user_id=? AND remind_at LIKE ? ORDER BY remind_at ASC LIMIT 5",
+            (self.current_user_id, f"{month_prefix}-%"))
+        rem_rows = cursor.fetchall()
+        if not rem_rows:
+            tk.Label(rem_body, text="No reminders set for this month.",
+                     bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
+        else:
+            for rtitle, rat, fired in rem_rows:
+                icon = "✔" if fired else "○"
+                cell = tk.Frame(rem_body, bg=GREY_BG, relief="solid", bd=1)
+                cell.pack(fill="x", pady=2)
+                tk.Label(cell, text=f"{icon}  {rtitle}", bg=GREY_BG, fg="#0d0d0d",
+                         font=("Helvetica", 10)).pack(side="left", padx=8, pady=4)
+                tk.Label(cell, text=rat, bg=GREY_BG, fg="#888888",
+                         font=("Helvetica", 9)).pack(side="right", padx=8)
+
+        
+        
+    def open_settings_sidebar(self):
+        """Shows a panel over the home screen with the user's name and a logout button."""
+        panel = tk.Frame(self.root, bg="white", width=220, height=700,
+                          relief="solid", bd=1)
+        panel.place(x=780, y=0)  # sits on the right side, over the home screen
+        panel.pack_propagate(False)
+
+        close_lbl = tk.Label(panel, text="✕ Close", bg="white", fg="#888888",
+                              font=("Helvetica", 10), cursor="hand2")
+        close_lbl.pack(anchor="ne", padx=10, pady=10)
+        close_lbl.bind("<Button-1>", lambda e: panel.destroy())
+
+        tk.Label(panel, text="👤", bg="white", font=("Helvetica", 30)).pack(pady=(20, 4))
+        tk.Label(panel, text=self.current_username, bg="white", fg="#0d0d0d",
+                 font=("Helvetica", 14, "bold")).pack(pady=(0, 30))
+
+        def logout():
+            """Logs the user out and returns to the login screen."""
+            self.current_user_id = None
+            self.current_username = None
+            self.login_screen()
+
+        logout_lbl = tk.Label(panel, text="Log Out", bg=DARK_RED, fg="white",
+                               font=("Helvetica", 12, "bold"), padx=14, pady=8,
+                               cursor="hand2")
+        logout_lbl.pack(pady=10)
+        logout_lbl.bind("<Button-1>", lambda e: logout())
+        logout_lbl.bind("<Enter>", lambda e: logout_lbl.config(bg=RED_HOVER_COLOR))
+        logout_lbl.bind("<Leave>", lambda e: logout_lbl.config(bg=DARK_RED))    
+        
+            
     def notes_screen(self):
+        """Creates the notes screen where users can see, create, and delete notes."""
         clear_screen(self.root)
         self.root.configure(bg=GREY_BG)
         cursor = self.db.get_cursor()
@@ -373,8 +629,9 @@ class appface:
 
         new_bar = tk.Frame(self.root, bg=GREY_BG, pady=10)
         new_bar.pack(fill="x", padx=20, pady=(14, 4))
-        tk.Label(new_bar, text="Title:", bg=GREY_BG,
-                 font=("Helvetica", 11,"bold")).pack(side="left")
+        note_title=tk.Label(new_bar, text="Title:", bg=GREY_BG,
+                 font=("Helvetica", 11,"bold"))
+        note_title.pack(side="left")
         new_title_entry = tk.Entry(new_bar, width=28, font=("Helvetica", 11),
                                    relief="solid", bd=1,bg=GREY_BG)
         new_title_entry.pack(side="left", padx=8, ipady=4)
@@ -382,6 +639,7 @@ class appface:
         status_lbl = tk.Label(self.root, text="", bg=GREY_BG, fg=DARK_RED,
                               font=("Helvetica", 10))
         status_lbl.pack()
+
         footer= tk.Frame(self.root, bg=GREY_BG)
         footer.pack(fill="x", side="bottom")
         back_notes=tk.Label(footer, text="Back", bg=NAVY_BLUE, fg="white",padx=14, pady=6,)
@@ -390,12 +648,17 @@ class appface:
         back_notes.bind("<Enter>", lambda e: back_notes.config(bg=BLUE_HOVER_COLOR))
         back_notes.bind("<Leave>", lambda e: back_notes.config(bg=NAVY_BLUE))
         def create_section():
+            """Creates a new note in the database."""
             title = new_title_entry.get().strip()
-            cursor.execute(
-                "INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)",
-                (self.current_user_id, title, "")
-            )
-            self.db.commit()
+            try:
+                cursor.execute(
+                    "INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)",
+                    (self.current_user_id, title, "")
+                )
+                self.db.commit()
+            except sqlite3.IntegrityError:
+                status_lbl.config(text="A note with this title already exists.")
+                return
             new_title_entry.delete(0, "end")
             status_lbl.config(text="")
             load_sections()
@@ -413,6 +676,7 @@ class appface:
             scrollregion=list_canvas.bbox("all")))
 
         def load_sections():
+            """Loads the notes from the database and displays them in the list."""
             for widgets in inner.winfo_children():
                 widgets.destroy()
             cursor.execute(
@@ -434,6 +698,7 @@ class appface:
                 tk.Label(left, text=note_title, bg=GREY_BG, fg="black",
                          font=("Helvetica", 13, "bold"), anchor="w").pack(anchor="w")
                 def open_section(nid=note_id, ntitle=note_title):
+                    """Opens the note editing screen for the selected note."""
                     self.note_edit_screen(nid, ntitle)
 
                 def delete_section(nid=note_id, ntitle=note_title):
@@ -456,6 +721,7 @@ class appface:
         load_sections()
 
     def note_edit_screen(self, note_id, note_title):
+        """Creates the screen for editing a note."""
         clear_screen(self.root)
         self.root.configure(bg=GREY_BG)
         cursor = self.db.get_cursor()
@@ -490,6 +756,7 @@ class appface:
         save_status.pack(side="left", padx=14)
         
         def save_note():
+            """Saves the current note to the database."""
             new_body = notes_text.get("1.0", "end-1c")
             cursor.execute(
                 "UPDATE notes SET body=? WHERE id=?",
@@ -503,6 +770,7 @@ class appface:
         save_lbl.pack(side="right", padx=14, pady=8)
         save_lbl.bind("<Button-1>", lambda e: save_note())
     def flashcards_screen(self):
+        """Creates the flashcards screen where users can see, create, and delete flashcard sets."""
         clear_screen(self.root)
         self.root.configure(bg=GREY_BG)
         cursor = self.db.get_cursor()
@@ -533,15 +801,20 @@ class appface:
         status_lbl.pack()
 
         def create_deck():
+            """Creates a new flashcard set in the database."""
             name = new_deck_entry.get().strip()
             if not name:
                 status_lbl.config(text="Enter a set name.")
                 return
-            cursor.execute(
-                "INSERT INTO decks (user_id, name) VALUES (?, ?)",
-                (self.current_user_id, name)
-            )
-            self.db.commit()
+            try:
+                cursor.execute(
+                    "INSERT INTO decks (user_id, name) VALUES (?, ?)",
+                    (self.current_user_id, name)
+                )
+                self.db.commit()
+            except sqlite3.IntegrityError:
+                status_lbl.config(text="A set with this name already exists.")
+                return
             new_deck_entry.delete(0, "end")
             status_lbl.config(text="")
             load_decks()
@@ -558,6 +831,7 @@ class appface:
         list_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         def load_decks():
+            """Loads the flashcard sets from the database and displays them in the list."""
             for widgets in list_frame.winfo_children():
                 widgets.destroy()
             cursor.execute(
@@ -604,6 +878,7 @@ class appface:
                           delete_deck(did, dname)).pack(side="left", padx=4)
 
         def delete_deck(deck_id, deck_name):
+            """Deletes a flashcard set"""
             if messagebox.askyesno("Delete", f'Delete set "{deck_name}" and all its cards?'):
                 cursor.execute("DELETE FROM decks WHERE id=?", (deck_id,))
                 self.db.commit()
@@ -612,6 +887,7 @@ class appface:
         load_decks()
 
     def deck_edit_screen(self, deck_id, deck_name):
+        """Creates the screen for editing a flashcard set."""
         clear_screen(self.root)
         self.root.configure(bg=GREY_BG)
         cursor = self.db.get_cursor()
@@ -647,6 +923,7 @@ class appface:
         add_status.grid(row=3, column=0, columnspan=2, sticky="w", padx=14)
 
         def add_card():
+            """Adds a new flashcard to the set."""
             front = front_entry.get().strip()
             back = back_entry.get().strip()
             if not front or not back:
@@ -672,6 +949,7 @@ class appface:
         list_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
         def load_cards():
+            """Loads the flashcards from the database and displays them in the list."""
             for widgets in list_frame.winfo_children():
                 widgets.destroy()
             cursor.execute(
@@ -703,6 +981,7 @@ class appface:
         load_cards()
 
     def study_deck(self, deck_id, deck_name):
+        """Creates the study screen for a flashcard set."""
         cursor = self.db.get_cursor()
         cursor.execute(
             "SELECT id, front, back FROM flashcards WHERE deck_id=? ORDER BY id",
@@ -745,6 +1024,7 @@ class appface:
         btn_row.pack(pady=(0, 28))
 
         def make_circle_btn(circle_frame, label, symbol, colour, command):
+            """Creates a circular button."""
             sub = tk.Frame(circle_frame, bg="#1a1a2e")
             sub.pack(side="left", padx=20)
             size = 72
@@ -758,6 +1038,7 @@ class appface:
                      font=("Helvetica", 9)).pack(pady=(4, 0))
 
         def next_card():
+            """ Displays the next card in the queue."""
             if not queue:
                 show_summary()
                 return
@@ -767,6 +1048,7 @@ class appface:
             card_label.config(text=current[1], bg=GREY_BG, fg="#0d0d0d")
 
         def flip_card(event=None):
+            """ Flips the card to reveal answer"""
             if not queue:
                 return
             current = queue[state["idx"] % len(queue)]
@@ -783,6 +1065,7 @@ class appface:
         card_label.bind("<Button-1>", flip_card)
 
         def got_right():
+            """ Removes the current card from the queue and shows the next one"""
             if not queue:
                 return
             queue.pop(state["idx"] % len(queue))
@@ -791,12 +1074,14 @@ class appface:
             next_card() if queue else show_summary()
 
         def dont_know():
+            """ Moves to the next card without removing the current one"""
             if not queue:
                 return
             state["idx"] = (state["idx"] + 1) % len(queue)
             next_card()
 
         def got_wrong():
+            """ Moves the current card to the end of the queue and shows the next one"""
             if not queue:
                 return
             card = queue.pop(state["idx"] % len(queue))
@@ -810,6 +1095,7 @@ class appface:
         make_circle_btn(btn_row, "Incorrent",  "✗", "#A8EEFF", got_wrong)
 
         def show_summary():
+            """ Displays a summary screen when all cards have been reviewed"""
             for widgets in win.winfo_children():
                 widgets.destroy()
             win.configure(bg="#1a1a2e")
@@ -823,6 +1109,7 @@ class appface:
         next_card()
         
     def quiz_screen(self):  
+        """Creates the quiz management screen where users can see, create, edit, and delete quizzes."""
         clear_screen(self.root)
         self.root.configure(bg=GREY_BG)
         cursor = self.db.get_cursor()
@@ -839,6 +1126,7 @@ class appface:
         quiz_name_entry.pack(side="left", padx=5)
         
         def create_quiz():
+            """ Creates a new quiz in the database."""
             name = quiz_name_entry.get().strip()
             if not name:
                 return
@@ -849,7 +1137,7 @@ class appface:
             refresh_quiz_list()
  
         create_quiz_lbl=tk.Label(top, text="Create Quiz",bg=NAVY_BLUE,fg="white",padx=14,pady=6,relief="flat",font=("Helvetica", 11))
-        create_quiz_lbl.pack(side="left", padx=5)
+        create_quiz_lbl.pack(side="left", padx=5, pady=11)
         create_quiz_lbl.bind("<Enter>", lambda e: create_quiz_lbl.config(bg=BLUE_HOVER_COLOR))
         create_quiz_lbl.bind("<Leave>", lambda e: create_quiz_lbl.config(bg=NAVY_BLUE))
         create_quiz_lbl.bind("<Button-1>", lambda e: create_quiz())
@@ -866,6 +1154,7 @@ class appface:
         list_frame = tk.Frame(self.root, bg=GREY_BG)
         list_frame.pack(fill="both", expand=True, padx=20, pady=10)
         def refresh_quiz_list():
+            """ Refreshes the list of quizzes displayed on the screen."""
             for widgets in list_frame.winfo_children():
                 widgets.destroy()
             cursor.execute("SELECT id, title FROM quizzes WHERE user_id=?",
@@ -896,6 +1185,7 @@ class appface:
         refresh_quiz_list()
 
     def quiz_edit_screen(self, quiz_id, quiz_title):
+        """ Creates the screen for editing a quiz, allowing users to add questions and view existing ones."""
         clear_screen(self.root)
         self.root.configure(bg=GREY_BG)
         cursor = self.db.get_cursor()
@@ -926,6 +1216,7 @@ class appface:
         status.pack()
 
         def add_question():
+            """ Adds a new question to the quiz in the database."""
             ques  = fields["Question"].get().strip()
             a_opt  = fields["Option A"].get().strip()
             b_opt  = fields["Option B"].get().strip()
@@ -953,6 +1244,7 @@ class appface:
         q_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
         def load_questions():
+            """ Loads the questions for the quiz and displays them."""
             for widgets in q_frame.winfo_children():
                 widgets.destroy()
             cursor.execute(
@@ -972,6 +1264,7 @@ class appface:
                         command=lambda i=qid: delete_question(i), bg=DARK_RED).pack(side="right", padx=6)
 
         def delete_question(qid):
+            """ Deletes a question from the quiz."""
             cursor.execute("DELETE FROM quiz_questions WHERE id=?", (qid,))
             self.db.commit()
             load_questions()
@@ -986,6 +1279,7 @@ class appface:
         load_questions()
 
     def take_quiz(self, quiz_id, quiz_title):
+        """ Starts the quiz."""
         cursor = self.db.get_cursor()
         cursor.execute("""
             SELECT id, question_text, option_a, option_b, option_c, option_d, correct
@@ -1005,6 +1299,7 @@ class appface:
         state = {"idx": 0, "score": 0, "total": len(questions)}
 
         def show_question():
+            """ Displays the current question and its options."""
             for widgets in win.winfo_children():
                 widgets.destroy()
             idx = state["idx"]
@@ -1027,6 +1322,9 @@ class appface:
 
             def submit():
                 ans = chosen.get()
+                if ans == "":
+                    feedback.config(text="Please select an answer.", fg=DARK_RED)
+                    return
                 if ans == correct:
                     state["score"] += 1
                     feedback.config(text="✔  Correct!", fg="green")
@@ -1035,12 +1333,16 @@ class appface:
                 submit_btn.config(state="disabled")
                 win.after(1200, lambda: [state.update({"idx": state["idx"]+1}), show_question()])
 
-            submit_btn = tk.Button(win, text="Submit Answer", bg="#0d0d0d", fg="white",
+            submit_btn = tk.Label(win, text="Submit Answer", bg=NAVY_BLUE, fg="white",
                                 font=("Helvetica", 11, "bold"), relief="flat",
-                                padx=20, pady=6, command=submit)
+                                padx=20, pady=6)
             submit_btn.pack(pady=4)
+            submit_btn.bind("<Enter>", lambda e: submit_btn.config(bg=BLUE_HOVER_COLOR))
+            submit_btn.bind("<Leave>", lambda e: submit_btn.config(bg=NAVY_BLUE))
+            submit_btn.bind("<Button-1>", lambda e: submit())
 
         def show_result():
+            """ Displays the final score and saves the try to the database."""
             from datetime import datetime
             cursor.execute(
                 "INSERT INTO quiz_attempts (quiz_id, user_id, score, total, taken_at) VALUES (?,?,?,?,?)",
@@ -1057,6 +1359,7 @@ class appface:
         show_question()
         
     def calendar_screen(self):
+        """Creates the calendar screen where users can view and add events."""
         from datetime import datetime, date
         import calendar as cal
  
@@ -1076,15 +1379,31 @@ class appface:
         back_cal.bind("<Button-1>", lambda e: self.home_screen())
         
  
-        # nav row
+        # Navigation bar to switch months
         nav = tk.Frame(self.root, bg="white")
         nav.pack()
         left_btn=tk.Label(nav, text="◄", bg="white", fg=DARK_RED,width="4", font=("Helvetica", 20), cursor="hand2")
         left_btn.pack(side="left", padx=10, pady=10)
-        left_btn.bind("<Button-1>", lambda e: [state.update({"month": state["month"] - 1}), actual_calender()])
+        def prev_month(event=None):
+            """ Moves to the previous month in the calendar."""
+            if state["month"] == 1:
+                state["month"] = 12
+                state["year"] -= 1
+            else:
+                state["month"] -= 1
+            actual_calender()
+        left_btn.bind("<Button-1>", prev_month)
         right_btn=tk.Label(nav, text="►", bg="white",width="2",fg=DARK_RED, font=("Helvetica", 20), cursor="hand2")
         right_btn.pack(side="right", padx=10, pady=10)
-        right_btn.bind("<Button-1>", lambda e: [state.update({"month": state    ["month"] + 1}), actual_calender()])
+        def next_month(event=None):
+            if state["month"] == 12:
+                state["month"] = 1
+                state["year"] += 1
+            else:
+                state["month"] += 1
+            actual_calender()
+
+        right_btn.bind("<Button-1>", next_month)        
         month_lbl = tk.Label(nav, text="", bg="white",fg=DARK_RED,font=("Helvetica", 26, "bold"), width=20)
         month_lbl.pack(side="left")
  
@@ -1278,6 +1597,7 @@ class appface:
         list_frame = tk.Frame(self.root, bg="white")
         list_frame.pack(fill="both", expand=True, padx=20, pady=5)
         def load_reminders():
+            """ Loads the reminders from the database and displays them in the list."""
             for widegts in list_frame.winfo_children():
                 widegts.destroy()
             now_time = datetime.now().strftime("%Y-%m-%d %H:%M")
