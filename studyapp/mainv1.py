@@ -208,7 +208,7 @@ class appface:
             if user:
                 self.current_user_id = user[0]
                 self.current_username = user[1]
-                self.home_screen()     # go to home screen
+                self.login_screen()     # go to home screen
             else:
                 status.config(text="Incorrect username or password.")
  
