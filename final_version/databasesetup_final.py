@@ -116,14 +116,15 @@ class DatabaseSetup:
             )
         """)
 
-def get_cursor(self):
-    """Returns a cursor so other parts of the app can query the database"""
-    return self.connection.cursor()
+    def get_cursor(self):
+        """Returns a cursor so other parts of the app can query the database"""
+        return self.connection.cursor()
+ 
+    def commit(self):
+        """Saves any changes made to the database"""
+        self.connection.commit()
+        
 
-def commit(self):
-    """Saves any changes made to the database"""
-    self.connection.commit()
-    
 def hash_password(password):
     """Hashes the password using SHA-256 and returns the hexadecimal digest."""
     return hashlib.sha256(password.encode()).hexdigest()

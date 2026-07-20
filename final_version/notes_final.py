@@ -5,7 +5,6 @@ from tkinter import messagebox
 from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR
 from helpers_final import clear_screen, make_hover_background
 
-
 def notes_screen(self):
     """Creates the notes screen where users can see, create, and delete notes."""
     clear_screen(self.root)

@@ -1,4 +1,15 @@
-
+import tkinter as tk
+ 
+from constants_final import DARK_RED, GREY_BG
+from databasesetup_final import DatabaseSetup
+ 
+from login_final import login_screen, register_screen
+from home_final import home_screen, open_settings_sidebar
+from notes_final import notes_screen, note_edit_screen
+from flashcards_final import flashcards_screen, deck_edit_screen, study_deck
+from quiz_final import quiz_screen, quiz_edit_screen, take_quiz
+from calendar_final import calendar_screen
+from reminders_final import reminders_screen
 
 class AppFace:
     def __init__(self,root):
@@ -63,3 +74,18 @@ class AppFace:
         user_pass.bind("<FocusIn>",  on_click_field) # when the user clicks on the field, it will clear the placeholder text and change the text color to black. If it's a password field, it will also hide the input with dots.
         user_pass.bind("<FocusOut>", unclick_field) # when the user clicks away from the field, if it's empty it will put the placeholder text back and change the text color to gray. It will also show the input if it's a password field.
         return user_pass
+    
+    login_screen = login_screen
+    register_screen = register_screen
+    home_screen = home_screen
+    open_settings_sidebar = open_settings_sidebar
+    notes_screen = notes_screen
+    note_edit_screen = note_edit_screen
+    flashcards_screen = flashcards_screen
+    deck_edit_screen = deck_edit_screen
+    study_deck = study_deck
+    quiz_screen = quiz_screen
+    quiz_edit_screen = quiz_edit_screen
+    take_quiz = take_quiz
+    calendar_screen = calendar_screen
+    reminders_screen = reminders_screen
