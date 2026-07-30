@@ -248,6 +248,24 @@ def open_settings_sidebar(self):
     #Shows the username of the logged in user
     tk.Label(panel, text=self.current_username, bg="white", fg="#0d0d0d",
                 font=("Helvetica", 14, "bold")).pack(pady=(0, 30))
+    
+    # Study streak with fire icon 
+    cursor = self.db.get_cursor()
+    cursor.execute("SELECT streak FROM users WHERE id=?", (self.current_user_id,))
+    streak_row = cursor.fetchone()
+    streak_count = streak_row[0] if streak_row and streak_row[0] else 0
+
+    streak_frame = tk.Frame(panel, bg="white")
+    streak_frame.pack(pady=(0, 30))
+    tk.Label(streak_frame, text="🔥", bg="white",
+                font=("Helvetica", 22)).pack(side="left", padx=(0, 6))
+    tk.Label(streak_frame, text=streak_count,
+                bg="white", fg=DARK_RED, font=("Helvetica", 13, "bold")).pack(side="left")
+
+
+
+
+
 
     def logout():
         """Logs the user out and returns to the login screen."""

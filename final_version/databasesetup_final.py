@@ -22,6 +22,22 @@ class DatabaseSetup:
                 password    TEXT    NOT NULL
             )
         """)
+        
+        #Add a column in the data base that tracks streaks
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN last_login_date TEXT")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN streak INTEGER NOT NULL DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+        self.connection.commit()
+
+
+
+
+
 
         #Notes table
 
@@ -126,6 +142,38 @@ class DatabaseSetup:
     def get_cursor(self):
         """Returns a cursor so other parts of the app can query the database"""
         return self.connection.cursor()
+ 
+ 
+    def update_streak(self, user_id):
+        """Updates the user's login streak. Calls it once every time user login.
+        If they last logged in yesterday, the streak goes up by 1. If they
+        already logged in today, the streak stays the same. If they haven't logged in
+        the previous day, the streak is reset. """
+        from datetime import date, timedelta
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT last_login_date, streak FROM users WHERE id=?", (user_id,))
+        row = cursor.fetchone()
+        last_login_date, streak = row if row else (None, 0)
+        streak = streak or 0
+
+        today = date.today()
+        today_str = today.strftime("%Y-%m-%d")
+        yesterday_str = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+
+        if last_login_date == today_str:
+            pass  # already logged in today --> streak doesn't change
+        elif last_login_date == yesterday_str:
+            streak += 1  # logged in yesterday --> streak continues
+        else:
+            streak = 1  # missed a day, streak --> restarts
+
+        cursor.execute(
+            "UPDATE users SET last_login_date=?, streak=? WHERE id=?",
+            (today_str, streak, user_id)
+        )
+        self.connection.commit()
+        return streak
+    
  
     def commit(self):
         """Saves any changes made to the database"""

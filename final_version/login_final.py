@@ -72,6 +72,8 @@ def login_screen(self):
         if user:
             self.current_user_id = user[0]
             self.current_username = user[1]
+            # Update how many days in a row they've logged in
+            self.current_streak = self.db.update_streak(user[0])
             # go to home screen
             self.home_screen()    
         else:
