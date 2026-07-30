@@ -7,8 +7,12 @@ from helpers_final import clear_screen, make_hover_background
 
 def flashcards_screen(self):
     """Creates the flashcards screen where users can see, create, and delete flashcard sets."""
+    
+    # Remove all widgets from the previous screen before displaying this one
     clear_screen(self.root)
     self.root.configure(bg=GREY_BG)
+    
+    # Create a cursor to communicate with the SQLite database
     cursor = self.db.get_cursor()
 
     header = tk.Frame(self.root, bg=DARK_RED)
@@ -19,6 +23,8 @@ def flashcards_screen(self):
     footer.pack(fill="x", side="bottom")
     back_flashcards=tk.Label(footer, text="Back", bg=NAVY_BLUE, fg="white",padx=14, pady=6,)
     back_flashcards.pack(side="right", padx=25, pady=15)
+    
+    # Return the user to the home screen when the Back label is clicked
     make_hover_background(back_flashcards,NAVY_BLUE,BLUE_HOVER_COLOR,self.home_screen)
 
 
@@ -26,31 +32,41 @@ def flashcards_screen(self):
     new_bar.pack(fill="x", padx=20, pady=(14, 4))
     tk.Label(new_bar, text="New set name:", bg=GREY_BG,
                 font=("Helvetica", 11)).pack(side="left")
+    
+    # Entry where the user types the name of the new flashcard set
     new_deck_entry = tk.Entry(new_bar, width=28, font=("Helvetica", 11),
                                 relief="solid", bd=1)
     new_deck_entry.pack(side="left", padx=8, ipady=4)
 
+    # Used to display validation and database messages
     status_lbl = tk.Label(self.root, text="", bg=GREY_BG, fg=DARK_RED,
                             font=("Helvetica", 10))
     status_lbl.pack()
 
     def create_deck():
         """Creates a new flashcard set in the database."""
+        
+        # Remove whitespace so users cannot create blank names using spaces
         name = new_deck_entry.get().strip()
         if not name:
             status_lbl.config(text="Enter a set name.")
             return
         try:
+            # Store the new deck so it is linked to the current logged-in user
             cursor.execute(
                 "INSERT INTO decks (user_id, name) VALUES (?, ?)",
                 (self.current_user_id, name)
             )
             self.db.commit()
         except sqlite3.IntegrityError:
-            status_lbl.config(text="A set with this name already exists.") # Error message if the set name already exists
+             # Error message if the set name already exists
+            status_lbl.config(text="A set with this name already exists.")
             return
+        # Clear the entry box after the deck has been created
         new_deck_entry.delete(0, "end")
         status_lbl.config(text="")
+        
+        # Refresh the deck list immediately so the new deck appears
         load_decks()
 
     create_lbl=tk.Label(new_bar, text="Create Set", bg=NAVY_BLUE, fg="white",
@@ -59,11 +75,37 @@ def flashcards_screen(self):
     make_hover_background(create_lbl,NAVY_BLUE,BLUE_HOVER_COLOR,create_deck)
     
 
-    list_frame = tk.Frame(self.root, bg=GREY_BG)
-    list_frame.pack(fill="both", expand=True, padx=20, pady=10)
+    # Scrollable area
+    container = tk.Frame(self.root, bg=GREY_BG)
+    container.pack(fill="both", expand=True, padx=20, pady=10)
+
+    canvas = tk.Canvas(container, bg=GREY_BG, highlightthickness=0)
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+
+    list_frame = tk.Frame(canvas, bg=GREY_BG)
+
+    window = canvas.create_window((0, 0), window=list_frame, anchor="nw")
+
+    # Tells the canvas how big the total scrolling area needs to be 
+    # every time the inner list_frame grows or shrinks.
+    list_frame.bind("<Configure>",lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+    def resize_frame(event):
+        """ Resizes the inside of the canvas"""
+        canvas.itemconfig(window, width=event.width)
+
+    canvas.bind("<Configure>", resize_frame)
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
 
     def load_decks():
         """Loads the flashcard sets from the database and displays them in the list."""
+        
+        # Remove existing widgets 
         for widgets in list_frame.winfo_children():
             widgets.destroy()
         cursor.execute(
@@ -71,11 +113,16 @@ def flashcards_screen(self):
             (self.current_user_id,)
         )
         decks = cursor.fetchall()
+        
+        # Display if user has not created any flashcard sets yet
         if not decks:
             tk.Label(list_frame, text="No flashcards yet!",
                         bg=GREY_BG, fg="#888888",
                         font=("Helvetica", 12)).pack(pady=30)
-            return # If there are no decks, display a message and return
+            # If there are no decks, display a message and return
+            return
+        
+        # Create one card on screen for every deck stored in the database
         for deck_id, deck_name in decks:
             cursor.execute("SELECT COUNT(*) FROM flashcards WHERE deck_id=?", (deck_id,))
             count = cursor.fetchone()[0]
@@ -88,12 +135,13 @@ def flashcards_screen(self):
             tk.Label(left, text=deck_name, bg=GREY_BG, fg="#0d0d0d",
                         font=("Helvetica", 13, "bold"), anchor="w").pack(anchor="w")
             tk.Label(left, text=f"{count} card{'s' if count != 1 else ''}",
-                        bg="white", fg="#888888",
+                        bg=GREY_BG, fg="#888888",
                         font=("Helvetica", 10), anchor="w").pack(anchor="w")
 
             btn_frame = tk.Frame(deck_card, bg=GREY_BG)
             btn_frame.pack(side="right", padx=10, pady=8)
-
+            
+            # Lambda stores the current deck values so each button opens the correct deck
             tk.Button(btn_frame, text="Edit", fg=NAVY_BLUE, relief="flat",
                         font=("Helvetica", 10,"bold"), padx=8,
                         command=lambda did=deck_id, dname=deck_name:
@@ -111,16 +159,18 @@ def flashcards_screen(self):
 
     def delete_deck(deck_id, deck_name):
         """Deletes a flashcard set"""
+        
+        # Ask for confirmation before deleting the deck
         if messagebox.askyesno("Delete", f'Delete set "{deck_name}" and all its cards?'):
             cursor.execute("DELETE FROM decks WHERE id=?", (deck_id,))
             self.db.commit()
             load_decks()
-
-    load_decks() # Load the decks when the screen is first created
+    # Load the decks when the screen is first created
+    load_decks() 
 
 def deck_edit_screen(self, deck_id, deck_name):
     """Creates the screen for editing a flashcard set."""
-    clear_screen(self.root) # Clear the screen and set the background color
+    clear_screen(self.root) 
     self.root.configure(bg=GREY_BG)
     cursor = self.db.get_cursor()
 
@@ -159,23 +209,28 @@ def deck_edit_screen(self, deck_id, deck_name):
         front = front_entry.get().strip()
         back = back_entry.get().strip()
         if not front or not back:
-            add_status.config(text="Fill in both sides.", fg=DARK_RED) # Error message if a side is empty
+            # Error message if a side is empty
+            add_status.config(text="Fill in both sides.", fg=DARK_RED) 
             return
         cursor.execute(
             "INSERT INTO flashcards (deck_id, user_id, front, back) VALUES (?, ?, ?, ?)",
             (deck_id, self.current_user_id, front, back)
         )
         self.db.commit()
-        front_entry.delete(0, "end") # Clear the front after adding the card
-        back_entry.delete(0, "end") # Clear the back after adding the card
+        # Clear the front after adding the card
+        front_entry.delete(0, "end") 
+        # Clear the back after adding the card
+        back_entry.delete(0, "end") 
         add_status.config(text="Card added!")
-        self.root.after(1500, lambda: add_status.config(text="")) # Clear the status message after 1.5 seconds
+        # Clear the status message after 1.5 seconds
+        self.root.after(1500, lambda: add_status.config(text="")) 
         load_cards()
 
     add_card_lbl=tk.Label(add_frame, text="Add Card", bg=NAVY_BLUE, fg="white",
                 relief="flat", font=("Helvetica", 11, "bold"),padx=12, pady=5)
     add_card_lbl.grid(row=4, column=0, columnspan=2, pady=10)
-    make_hover_background(add_card_lbl,NAVY_BLUE,BLUE_HOVER_COLOR,add_card) # Make the "Add Card" label look like a button and call add_card when clicked
+     # Make the "Add Card" label look like a button and call add_card when clicked
+    make_hover_background(add_card_lbl,NAVY_BLUE,BLUE_HOVER_COLOR,add_card)
     list_frame = tk.Frame(self.root, bg=GREY_BG)
     list_frame.pack(fill="both", expand=True, padx=20, pady=5)
 
@@ -186,14 +241,16 @@ def deck_edit_screen(self, deck_id, deck_name):
         cursor.execute(
             "SELECT id, front, back FROM flashcards WHERE deck_id=? ORDER BY id",
             (deck_id,)
-        )# Get all the cards for the current deck
+        )
+        # Get all the cards for the current deck
         cards = cursor.fetchall()
         if not cards:
             tk.Label(list_frame, text="No cards yet. Add one above!",
                         bg=GREY_BG, fg="#888888",
                         font=("Helvetica", 11)).pack(pady=20) 
             return
-        for card_id, front, back in cards: # Create a row for each card with the question and answer displayed
+        for card_id, front, back in cards: 
+            # Create a row for each card with the question and answer displayed
             row = tk.Frame(list_frame, bg=GREY_BG, relief="solid", bd=1)
             row.pack(fill="x", pady=3)
             tk.Label(row, text=f"Q: {front}", bg=GREY_BG,
@@ -218,7 +275,8 @@ def study_deck(self, deck_id, deck_name):
         "SELECT id, front, back FROM flashcards WHERE deck_id=? ORDER BY id",
         (deck_id,)
     )
-    all_cards = cursor.fetchall() # Get all the cards for the current deck
+    # Get all the cards for the current deck
+    all_cards = cursor.fetchall() 
 
     if not all_cards:
         messagebox.showinfo("Empty Set", "This set has no cards yet!")
@@ -228,18 +286,24 @@ def study_deck(self, deck_id, deck_name):
     win.title(deck_name)
     win.geometry("700x520")
     win.configure(bg="#1a1a2e")
-    win.grab_set() # Make the study window modal so the user can't interact with the main window until they close it
+    # Make the study window modal so the user can't interact with the main window until they close it
+    win.grab_set() 
 
     queue = list(all_cards)
+    # dictionary to keep track of the current card index, whether the card is flipped, and the total number of cards
     state = {
         "idx": 0,
         "flipped": False,
         "total": len(all_cards),
-    } # dictionary to keep track of the current card index, whether the card is flipped, and the total number of cards
+    } 
+    # Track how many cards user has done
+    progress_label = tk.Label(win,text="",bg="#1a1a2e",fg="white",font=("Helvetica", 12, "bold"))
+    progress_label.pack(pady=(15, 0))
 
     card_outer = tk.Frame(win, bg="#1a1a2e")
     card_outer.pack(expand=True, fill="both", padx=40, pady=20)
-
+    
+    
     card_frame = tk.Frame(card_outer, bg=GREY_BG, relief="flat",
                             width=560, height=240)
     card_frame.pack(expand=True)
@@ -259,11 +323,14 @@ def study_deck(self, deck_id, deck_name):
         sub = tk.Frame(circle_frame, bg="#1a1a2e")
         sub.pack(side="left", padx=20)
         size = 72
-        circle = tk.Canvas(sub, width=size, height=size,highlightthickness=0, bg="#1a1a2e") # Create a canvas to draw the circle button
+        # Create a canvas to draw the circle button
+        circle = tk.Canvas(sub, width=size, height=size,highlightthickness=0, bg="#1a1a2e") 
         circle.pack()
-        circle.create_oval(4, 4, size - 4, size - 4, fill=colour, outline="") # Draw the circle
+        # Draw the circle
+        circle.create_oval(4, 4, size - 4, size - 4, fill=colour, outline="") 
+        # Draw the symbol in the center of the circle
         circle.create_text(size // 2, size // 2, text=symbol,
-                            font=("Helvetica", 22), fill="#1a1a2e") # Draw the symbol in the center of the circle
+                            font=("Helvetica", 22), fill="#1a1a2e")
         circle.bind("<Button-1>", lambda e: command())
         tk.Label(sub, text=label, bg="#1a1a2e", fg="#cccccc",
                     font=("Helvetica", 9)).pack(pady=(4, 0))
@@ -273,17 +340,27 @@ def study_deck(self, deck_id, deck_name):
         if not queue:
             show_summary()
             return
-        current = queue[state["idx"] % len(queue)] # Get the current card based on the index in the queue
-        state["flipped"] = False # Reset the flipped state when moving to the next card
+        #Display what question user is on
+        completed = state["total"] - len(queue)
+        progress_label.config(text=f"Card {completed + 1} of {state['total']}")
+        # Get the current card based on the index in the queue
+        current = queue[state["idx"] % len(queue)] 
+        # Reset the flipped state when moving to the next card
+        state["flipped"] = False 
         card_frame.config(bg="white")
-        card_label.config(text=current[1], bg=GREY_BG, fg="#0d0d0d") # Display the questoin and reset the background
+        # Display the questoin and reset the background
+        card_label.config(text=current[1], bg=GREY_BG, fg="#0d0d0d") 
+        
+        
 
     def flip_card(event=None):
         """ Flips the card to reveal answer"""
-        if not queue: # If there are no cards in the queue, do nothing
+        # If there are no cards in the queue, do nothing
+        if not queue: 
             return
         current = queue[state["idx"] % len(queue)]
-        if not state["flipped"]: # If the card is not flipped, flip it to show the answer
+        # If the card is not flipped, flip it to show the answer
+        if not state["flipped"]: 
             card_frame.config(bg="#f0f4ff")
             card_label.config(text=current[2], bg="#f0f4ff", fg="#1a1a8e")
             state["flipped"] = True
@@ -299,10 +376,13 @@ def study_deck(self, deck_id, deck_name):
         """ Removes the current card from the queue and shows the next one"""
         if not queue:
             return
-        queue.pop(state["idx"] % len(queue)) # Remove the current card from the queue
+        # Remove the current card from the queue
+        queue.pop(state["idx"] % len(queue)) 
         if queue:
-            state["idx"] = state["idx"] % len(queue) # If there are still cards left, keep the index within bounds
-        next_card() if queue else show_summary() # If there are still cards left, show the next card else show the summary screen
+            # If there are still cards left, keep the index within bounds
+            state["idx"] = state["idx"] % len(queue)
+        # If there are still cards left, show the next card else show the summary screen 
+        next_card() if queue else show_summary() 
 
     def dont_know():
         """ Moves to the next card without removing the current one"""
@@ -320,8 +400,8 @@ def study_deck(self, deck_id, deck_name):
         state["idx"] = state["idx"] % len(queue)
         next_card()
 
-
-    make_circle_btn(btn_row, "Correct", "✓", "#90E6FC", got_right) # Create the buttons for the user to press if they got the card right, wrong, or don't know
+    # Create the buttons for the user to press if they got the card right, wrong, or don't know
+    make_circle_btn(btn_row, "Correct", "✓", "#90E6FC", got_right) 
     make_circle_btn(btn_row, "Not Sure",   "?", "#7CD7F7", dont_know)
     make_circle_btn(btn_row, "Incorrect",  "✗", "#A8EEFF", got_wrong)
 
@@ -329,7 +409,8 @@ def study_deck(self, deck_id, deck_name):
         """ Displays a summary screen when all cards have been reviewed"""
         for widgets in win.winfo_children():
             widgets.destroy()
-        win.configure(bg="#1a1a2e") # Set the background color of the summary screen
+        # Set the background color of the summary screen
+        win.configure(bg="#1a1a2e") 
         tk.Label(win, text="Revision Complete!", bg="#1a1a2e", fg="white",
                     font=("Helvetica", 22, "bold")).pack(pady=(60, 10))
         close_cards=tk.Label(win, text="Close", bg=DARK_RED, fg="white", relief="flat",

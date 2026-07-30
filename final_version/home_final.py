@@ -13,6 +13,7 @@ def home_screen(self):
     def check_reminders():
         """Checks the database(every 30sec) for any reminders that are due."""
         from datetime import datetime
+        # Get the current date and time in the same format as the reminder timestamps stored in the database
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
         cursor.execute("""
             SELECT id, rem_title
@@ -25,6 +26,7 @@ def home_screen(self):
         reminders = cursor.fetchall()
 
         for reminder_id, title in reminders:
+            # Display a pop-up notification for each reminder that is due
             messagebox.showinfo("Reminder", title)
 
             cursor.execute(
@@ -33,7 +35,8 @@ def home_screen(self):
             )
 
         self.db.commit()
-
+        
+        # Function to run every 30 seconds so reminders are constantly checked
         self.root.after(30000, check_reminders)
 
     check_reminders()
@@ -50,17 +53,24 @@ def home_screen(self):
     
     make_hover_foreground(gear_lbl,"white","#dddddd",self.open_settings_sidebar)
     
+    search_lbl = tk.Label(header, text="⌕", bg=DARK_RED, fg="white",
+                            font=("Helvetica", 40), cursor="hand2")
+    search_lbl.pack(side="right", padx=(0, 4), pady=16)
+
+    make_hover_foreground(search_lbl,"white","#dddddd",self.open_search_panel)
+    
     #Dashboard
     board = tk.Frame(self.root, bg=GREY_BG)
     board.pack(fill="both", expand=True, padx=16, pady=14)
+    # Dashboard grid changes so each card expands evenly when the window is resized
     board.grid_columnconfigure(0, weight=1, uniform="col")
     board.grid_columnconfigure(1, weight=1, uniform="col")
     board.grid_rowconfigure(0, weight=3)
     board.grid_rowconfigure(1, weight=3)
     board.grid_rowconfigure(2, weight=2)
-    
+
     def make_card(title, row, col, colspan=1, open_cmd=None):
-        """Creates a card with a title and an "Open" button."""
+        """Reusable function to create a card with a title and an "Open" button."""
         outer = tk.Frame(board, bg="white", relief="solid", bd=1)
         outer.grid(row=row, column=col, columnspan=colspan, sticky="nsew", padx=8, pady=8)
 
@@ -77,11 +87,14 @@ def home_screen(self):
 
         body = tk.Frame(outer, bg="white")
         body.pack(fill="both", expand=True, padx=12, pady=10)
+        # Return the body frame so different dashboard sections can insert their own widgets
         return body
     
     
     # Notes section
     notes_body = make_card("Notes", 0, 0, open_cmd=self.notes_screen)
+    
+    # Get the five most recently created notes for the logged-in user
     cursor.execute(
         "SELECT id, title FROM notes WHERE user_id=? ORDER BY id DESC LIMIT 5",
         (self.current_user_id,))
@@ -94,6 +107,7 @@ def home_screen(self):
             lbl = tk.Label(notes_body, text=f"{ntitle}", bg="white", fg="#0d0d0d",
                             font=("Helvetica", 11), anchor="w", cursor="hand2")
             lbl.pack(fill="x", pady=2)
+            #Store the current deck values so each label opens the correct flashcard deck when clicked
             lbl.bind("<Button-1>", lambda e, i=nid, t=ntitle: self.note_edit_screen(i, t))
     
     #Flashcards section
@@ -116,6 +130,7 @@ def home_screen(self):
             lbl.pack(side="left")
             tk.Label(row, text=f"{ccount} card{'s' if ccount != 1 else ''}", bg="white",
                         fg="#888888", font=("Helvetica", 9)).pack(side="right")
+            # Store the current deck values so each label opens the correct flashcard deck when clicked
             lbl.bind("<Button-1>", lambda e, i=did, t=dname: self.study_deck(i, t))
     
     #Quiz section
@@ -159,9 +174,11 @@ def home_screen(self):
         (self.current_user_id, today_str))
     todays_events = cursor.fetchall()
     if todays_events:
+        #event title
         tk.Label(cal_body, text="Today", bg="white", fg="#888888",
-                    font=("Helvetica", 9, "bold")).pack(anchor="w") #event title
+                    font=("Helvetica", 9, "bold")).pack(anchor="w") 
         for ev_title, ev_date, ev_type in todays_events:
+            # Use colour coding to make different event types easier for users to identify
             colour = TYPE_COLORS.get(ev_type, "white")
             row = tk.Frame(cal_body, bg=colour)
             row.pack(fill="x", pady=2)
@@ -203,6 +220,7 @@ def home_screen(self):
                     bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
     else:
         for rtitle, rat, fired in rem_rows:
+            #Show a different icon depending on whether the reminder has already been triggered
             icon = "✔" if fired else "○"
             cell = tk.Frame(rem_body, bg=GREY_BG, relief="solid", bd=1)
             cell.pack(fill="x", pady=2)
@@ -215,9 +233,10 @@ def home_screen(self):
     
 def open_settings_sidebar(self):
     """Shows a panel over the home screen with the user's name and a logout button."""
-    panel = tk.Frame(self.root, bg="white", width=220, height=700,
+    panel = tk.Frame(self.root, bg="white", width=270, height=700,
                         relief="solid", bd=1)
-    panel.place(x=780, y=0)  # sits on the right side, over the home screen
+    # Sits on the right side, over the home screen
+    panel.place(x=830, y=0) 
     panel.pack_propagate(False)
 
     close_lbl = tk.Label(panel, text="✕ Close", bg="white", fg="#888888",
@@ -226,8 +245,9 @@ def open_settings_sidebar(self):
     close_lbl.bind("<Button-1>", lambda e: panel.destroy())
 
     tk.Label(panel, text="👤", bg="white", font=("Helvetica", 30)).pack(pady=(20, 4))
+    #Shows the username of the logged in user
     tk.Label(panel, text=self.current_username, bg="white", fg="#0d0d0d",
-                font=("Helvetica", 14, "bold")).pack(pady=(0, 30)) #Shows the username of the logged in user
+                font=("Helvetica", 14, "bold")).pack(pady=(0, 30))
 
     def logout():
         """Logs the user out and returns to the login screen."""

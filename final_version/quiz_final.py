@@ -24,7 +24,8 @@ def quiz_screen(self):
     def create_quiz():
         """ Creates a new quiz in the database."""
         name = quiz_name_entry.get().strip()
-        if not name: # If the name is empty dont let user create quiz
+        # If the name is empty dont let user create quiz
+        if not name: 
             return
         cursor.execute("INSERT INTO quizzes (user_id, title) VALUES (?, ?)",
                         (self.current_user_id, name))
@@ -37,8 +38,8 @@ def quiz_screen(self):
     
     make_hover_background(create_quiz_lbl,NAVY_BLUE,BLUE_HOVER_COLOR,create_quiz)
     
-
-    footer=tk.Frame(self.root,bg=GREY_BG) # Create a footer frame to for the back button
+    # Create a footer frame to for the back button
+    footer=tk.Frame(self.root,bg=GREY_BG) 
     footer.pack(side="bottom",fill="x")
     back_quiz=tk.Label(footer, text="Back", bg=NAVY_BLUE, fg="white",padx=14, pady=6,)
     back_quiz.pack(side="right", padx=25, pady=15)
@@ -60,7 +61,8 @@ def quiz_screen(self):
             tk.Label(list_frame, text="No quizzes yet!",
                         bg="white", fg="#888888").pack(pady=20)
             return
-        for qid, qtitle in quizzes: # Create a row for each quiz with buttons to edit, take, or delete the quiz
+        # Create a row for each quiz with buttons to edit, take, or delete the quiz
+        for qid, qtitle in quizzes: 
             row = tk.Frame(list_frame, bg=GREY_BG, relief="solid", bd=1)
             row.pack(fill="x", pady=4)
             tk.Label(row, text=qtitle, bg=GREY_BG,font=("Helvetica", 12)).pack(side="left", padx=10, pady=8)
@@ -106,7 +108,8 @@ def quiz_edit_screen(self, quiz_id, quiz_title):
     tk.Label(form, text="Correct Answer:", bg=GREY_BG, width=12,
             anchor="w").grid(row=5, column=0, sticky="w")
     correct_var = tk.StringVar(value="A")
-    tk.OptionMenu(form, correct_var, "A", "B", "C", "D").grid(row=5, column=1, sticky="w", padx=5) # Create a dropdown menu for selecting the correct answer
+    # Create a dropdown menu for selecting the correct answer
+    tk.OptionMenu(form, correct_var, "A", "B", "C", "D").grid(row=5, column=1, sticky="w", padx=5) 
 
     status = tk.Label(self.root, text="", bg=GREY_BG, fg=DARK_RED)
     status.pack()
@@ -118,7 +121,8 @@ def quiz_edit_screen(self, quiz_id, quiz_title):
         b_opt  = fields["Option B"].get().strip()
         c_opt  = fields["Option C"].get().strip()
         d_opt  = fields["Option D"].get().strip()
-        ans = correct_var.get().upper() # Get the selected correct answer from the dropdown menu
+        # Get the selected correct answer from the dropdown menu
+        ans = correct_var.get().upper() 
         if not all([ques, a_opt, b_opt, c_opt, d_opt]): # If any of the fields are empty, show an error message
             status.config(text="Please fill in all fields.")
             return
@@ -129,7 +133,8 @@ def quiz_edit_screen(self, quiz_id, quiz_title):
         """, (quiz_id, ques, a_opt, b_opt, c_opt, d_opt, ans))
         self.db.commit()
         for e in fields.values():
-            e.delete(0, "end") # Clear the input fields after adding the question
+            # Clear the input fields after adding the question
+            e.delete(0, "end") 
         status.config(text="Question added.", fg="green")
         load_questions()
 
@@ -146,11 +151,14 @@ def quiz_edit_screen(self, quiz_id, quiz_title):
         cursor.execute(
             "SELECT id, question_text, correct FROM quiz_questions WHERE quiz_id=?",
             (quiz_id,))
-        rows = cursor.fetchall()# Get all the questions for the current quiz
-        if not rows: # If there are no questions in the quiz, display a message
+        # Get all the questions for the current quiz
+        rows = cursor.fetchall()
+        # If there are no questions in the quiz, display a message
+        if not rows: 
             tk.Label(q_frame, text="No questions yet!", bg="white", fg="#888888").pack()
             return
-        for qid, qtxt, qans in rows: # Create a row for each question with the question text and the correct answer displayed
+        # Create a row for each question with the question text and the correct answer displayed
+        for qid, qtxt, qans in rows: 
             r = tk.Frame(q_frame, bg=GREY_BG, relief="solid", bd=1)
             r.pack(fill="x", pady=2)
             tk.Label(r, text=f"Q: {qtxt}  [Ans: {qans}]", bg=GREY_BG,
@@ -190,7 +198,8 @@ def take_quiz(self, quiz_id, quiz_title):
     win.configure(bg="white")
     win.grab_set()
 
-    state = {"idx": 0, "score": 0, "total": len(questions)} # dictionary to keep track of the current question index, the score, and the total number of questions
+    # dictionary to keep track of the current question index, the score, and the total number of questions
+    state = {"idx": 0, "score": 0, "total": len(questions)} 
 
     def show_question():
         """ Displays the current question and its options."""
@@ -205,8 +214,8 @@ def take_quiz(self, quiz_id, quiz_title):
         tk.Label(win, text=qtxt, bg="white", fg="#0d0d0d",
                 font=("Helvetica", 13, "bold"), wraplength=520,
                 justify="left").pack(anchor="w", padx=30, pady=(0, 16))
-
-        chosen = tk.StringVar() # Variable to keep track of the selected answer
+        # Variable to keep track of the selected answer
+        chosen = tk.StringVar() 
         for label, text in zip(["A","B","C","D"], [a, b, c, d]):
             tk.Radiobutton(win, text=f"{label}.  {text}", variable=chosen,
                         value=label, bg="white", font=("Helvetica", 11)).pack(anchor="w", padx=40, pady=3)
@@ -224,7 +233,8 @@ def take_quiz(self, quiz_id, quiz_title):
                 feedback.config(text="✔  Correct!", fg="green")
             else:
                 feedback.config(text=f"✘  Wrong. The correct answer is {correct}", fg=DARK_RED)
-            submit_btn.config(state="disabled") # Disable the submit button after submission to prevent multiple submissions
+            # Disable the submit button after submission to prevent multiple submissions
+            submit_btn.config(state="disabled") 
             win.after(1200, lambda: [state.update({"idx": state["idx"]+1}), show_question()])
 
         submit_btn = tk.Label(win, text="Submit Answer", bg=NAVY_BLUE, fg="white",
@@ -237,10 +247,11 @@ def take_quiz(self, quiz_id, quiz_title):
     def show_result():
         """ Displays the final score and saves the try to the database."""
         from datetime import datetime
+        # Disable the submit button after submission to prevent multiple submissions
         cursor.execute(
             "INSERT INTO quiz_attempts (quiz_id, user_id, score, total, taken_at) VALUES (?,?,?,?,?)",
             (quiz_id, self.current_user_id, state["score"], state["total"],
-                datetime.now().strftime("%Y-%m-%d %H:%M"))) # Save the quiz attempt to the database with the current timestamp
+                datetime.now().strftime("%Y-%m-%d %H:%M"))) 
         self.db.commit()
         for widgets in win.winfo_children():
             widgets.destroy()

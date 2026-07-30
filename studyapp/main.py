@@ -14,16 +14,20 @@ NAVY_BLUE="#000066"
 GREY_BG="#f9f9f9"
 RED_HOVER_COLOR="#400000"
 BLUE_HOVER_COLOR="#000026"
+    
 class DatabaseSetup:
     def __init__(self,db_path="study_app.db"):
         """Creates the database connection and sets up the database file."""
         self.db_path = db_path
-        self.settings_win = None # Checks if the settings window is open
-        self.connection = sqlite3.connect(db_path)#Connect to the database file (creates it if it doesn't exist)
+        # Checks if the settings window is open
+        self.settings_win = None 
+        #Connect to the database file (creates it if it doesn't exist)
+        self.connection = sqlite3.connect(db_path)
                 
     def create_tables(self): 
         """Creates the tables in the database if they don't already exist."""
-        cursor = self.connection.cursor() #cursor object to execute SQL commands
+        #cursor object to execute SQL commands
+        cursor = self.connection.cursor() 
 
         #Users table
         cursor.execute("""
@@ -84,6 +88,7 @@ class DatabaseSetup:
         """)
         self.connection.commit()
         
+        # Quiz questions table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quiz_questions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,6 +101,8 @@ class DatabaseSetup:
                 correct TEXT NOT NULL,
                 FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE)
                 """)
+        
+        # Quiz attmepts table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quiz_attempts (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,6 +115,8 @@ class DatabaseSetup:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         """)
+        
+        # Calender events table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS calendar_events (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,6 +127,7 @@ class DatabaseSetup:
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)
             """)
         
+        # Reminders table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS reminders (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -378,12 +388,7 @@ class AppFace:
         regis_btn.pack(pady=(4, 0))
         regis_btn.bind("<Button-1>", lambda e: attempt_register())
         
-        
-        
-        
-        
-        
-        
+          
         
     def home_screen(self):
         """Creates the home screen with dashboard"""
@@ -596,18 +601,19 @@ class AppFace:
         
     def open_settings_sidebar(self):
         """Shows a panel over the home screen with the user's name and a logout button."""
-        panel = tk.Frame(self.root, bg="white", width=220, height=700,
+        panel = tk.Frame(self.root, bg="#fff5f6", width=220, height=700,
                           relief="solid", bd=1)
-        panel.place(x=780, y=0)  # sits on the right side, over the home screen
+        panel.place(x=880, y=0)  # sits on the right side, over the home screen
         panel.pack_propagate(False)
+        
 
-        close_lbl = tk.Label(panel, text="✕ Close", bg="white", fg="#888888",
+        close_lbl = tk.Label(panel, text="✕ Close", bg="#fff5f6", fg="#888888",
                               font=("Helvetica", 10), cursor="hand2")
         close_lbl.pack(anchor="ne", padx=10, pady=10)
         close_lbl.bind("<Button-1>", lambda e: panel.destroy())
 
-        tk.Label(panel, text="👤", bg="white", font=("Helvetica", 30)).pack(pady=(20, 4))
-        tk.Label(panel, text=self.current_username, bg="white", fg="#0d0d0d",
+        tk.Label(panel, text="👤", bg="#fff5f6", font=("Helvetica", 30)).pack(pady=(20, 4))
+        tk.Label(panel, text=self.current_username, bg="#fff5f6", fg="#0d0d0d",
                  font=("Helvetica", 14, "bold")).pack(pady=(0, 30)) #Shows the username of the logged in user
 
         def logout():
@@ -1007,6 +1013,9 @@ class AppFace:
             "total": len(all_cards),
         } # dictionary to keep track of the current card index, whether the card is flipped, and the total number of cards
 
+        progress_label = tk.Label(win,text="",bg="#1a1a2e",fg="white",font=("Helvetica", 12, "bold"))
+        progress_label.pack(pady=(15, 0))
+
         card_outer = tk.Frame(win, bg="#1a1a2e")
         card_outer.pack(expand=True, fill="both", padx=40, pady=20)
 
@@ -1047,6 +1056,8 @@ class AppFace:
             state["flipped"] = False # Reset the flipped state when moving to the next card
             card_frame.config(bg="white")
             card_label.config(text=current[1], bg=GREY_BG, fg="#0d0d0d") # Display the questoin and reset the background
+            completed = state["total"] - len(queue)
+            progress_label.config(text=f"Card {completed + 1} of {state['total']}")
 
         def flip_card(event=None):
             """ Flips the card to reveal answer"""

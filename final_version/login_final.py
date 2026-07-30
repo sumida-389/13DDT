@@ -66,12 +66,14 @@ def login_screen(self):
             "SELECT id, username FROM users WHERE username=? AND password=?",
             (username, hashed)
         )
-        user = cursor.fetchone()   # returns (id, username) or None
+        # returns (id, username) or None
+        user = cursor.fetchone()  
 
         if user:
             self.current_user_id = user[0]
             self.current_username = user[1]
-            self.home_screen()     # go to home screen
+            # go to home screen
+            self.home_screen()    
         else:
             status.config(text="Incorrect username or password.")
 
@@ -143,7 +145,8 @@ def register_screen(self):
                 "INSERT INTO users (username, password) VALUES (?, ?)",
                 (username, hashed)
             )
-            self.db.commit()   # save to database
+            # save to database
+            self.db.commit() 
             messagebox.showinfo("Success", f"Account created! Welcome, {username}.")
             self.login_screen()
         except sqlite3.IntegrityError:

@@ -7,6 +7,8 @@ from helpers_final import clear_screen, make_hover_background
 
 def notes_screen(self):
     """Creates the notes screen where users can see, create, and delete notes."""
+    
+    # Remove the previous screen so only the notes interface is displayed
     clear_screen(self.root)
     self.root.configure(bg=GREY_BG)
     cursor = self.db.get_cursor()
@@ -25,6 +27,7 @@ def notes_screen(self):
                                 relief="solid", bd=1,bg=GREY_BG)
     new_title_entry.pack(side="left", padx=8, ipady=4)
 
+    # Display validation messages without opening pop up windows
     status_lbl = tk.Label(self.root, text="", bg=GREY_BG, fg=DARK_RED,
                             font=("Helvetica", 10))
     status_lbl.pack()
@@ -33,17 +36,22 @@ def notes_screen(self):
     footer.pack(fill="x", side="bottom")
     back_notes=tk.Label(footer, text="Back", bg=NAVY_BLUE, fg="white",padx=14, pady=6,)
     back_notes.pack(side="right", padx=25, pady=15)
+    
+    # Apply hover effects and allow the Back label to return to the home screen
     make_hover_background(back_notes,NAVY_BLUE,BLUE_HOVER_COLOR,self.home_screen)
     
     def create_section():
         """Creates a new note in the database."""
+        
+        # Remove leading and trailing spaces so users cannot create titles using only whitespace
         title = new_title_entry.get().strip()
         try:
             cursor.execute(
                 "INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)",
                 (self.current_user_id, title, "")
             )
-            self.db.commit() # save to database
+            # save to database
+            self.db.commit()
         except sqlite3.IntegrityError:
             status_lbl.config(text="A note with this title already exists.")
             return
@@ -55,17 +63,39 @@ def notes_screen(self):
     create_note_lbl.pack(side="left")
     make_hover_background(create_note_lbl,NAVY_BLUE,BLUE_HOVER_COLOR,create_section)
 
-    list_canvas = tk.Canvas(self.root, bg=GREY_BG)
-    list_canvas.pack(fill="both", expand=True, padx=20, pady=10)
-    inner = tk.Frame(list_canvas, bg=GREY_BG) # Make a frame inside the canvas to hold the notes
-    list_canvas.create_window((0, 0), window=inner, anchor="nw")
-    inner.bind("<Configure>", lambda e: list_canvas.configure(
-        scrollregion=list_canvas.bbox("all")))
+    container = tk.Frame(self.root, bg=GREY_BG)
+    container.pack(fill="both", expand=True, padx=20, pady=10)
+
+    list_canvas = tk.Canvas(container, bg=GREY_BG, highlightthickness=0)
+    # Create a vertical scrollbar and link to canvas
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=list_canvas.yview)
+
+    inner = tk.Frame(list_canvas, bg=GREY_BG)
+
+    window = list_canvas.create_window((0, 0), window=inner, anchor="nw")
+
+    # Whenever the size of the inner frame changes, chnage the canvas
+    # scroll region so the scrollbar knows how far it can scroll
+    inner.bind("<Configure>",lambda e: list_canvas.configure(scrollregion=list_canvas.bbox("all")))
+
+    def resize_inner(event):
+        """ Resizes the inside of the canvas"""
+        list_canvas.itemconfig(window, width=event.width)
+
+    list_canvas.bind("<Configure>", resize_inner)
+
+    list_canvas.configure(yscrollcommand=scrollbar.set)
+
+    list_canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    
 
     def load_sections():
         """Loads the notes from the database and displays them in the list."""
         for widgets in inner.winfo_children():
             widgets.destroy()
+            
+        # Retrieve every note belonging to the currently logged-in user
         cursor.execute(
             "SELECT id, title, body FROM notes WHERE user_id=? ORDER BY id",
             (self.current_user_id,)
@@ -92,12 +122,14 @@ def notes_screen(self):
                 if messagebox.askyesno("Delete", f'Delete "{ntitle}"?'):
                     cursor.execute("DELETE FROM notes WHERE id=?", (nid,))
                     self.db.commit()
-                    load_sections() #reload the list after deletion
+                    #reload the list after deletion
+                    load_sections() 
 
+            # Allow users to open a note by clicking anywhere on the note card
             note_card.bind("<Button-1>", lambda e, f=open_section: f())
             left.bind("<Button-1>", lambda e, f=open_section: f())
 
-            btn_frame = tk.Frame(note_card, bg="white")
+            btn_frame = tk.Frame(note_card, bg=GREY_BG)
             btn_frame.pack(side="right", padx=10)
             tk.Button(btn_frame, text="Open", fg=DARK_RED,relief="flat", font=("Helvetica", 10),
                         padx=8, command=open_section).pack(pady=2)
@@ -111,7 +143,8 @@ def note_edit_screen(self, note_id, note_title):
     """Creates the screen for editing a note."""
     clear_screen(self.root)
     self.root.configure(bg=GREY_BG)
-    cursor = self.db.get_cursor() # get a cursor to the database so we can read and write the note
+    # get a cursor to the database so we can read and write the note
+    cursor = self.db.get_cursor() 
 
     header = tk.Frame(self.root, bg=DARK_RED)
     header.pack(fill="x")
@@ -124,7 +157,8 @@ def note_edit_screen(self, note_id, note_title):
                         font=("Helvetica", 16, "bold"))
     header_lbl.pack(side="left", pady=12)
 
-    text_frame = tk.Frame(self.root, bg=GREY_BG) #frame to hold the text widget
+    #frame to hold the text widget
+    text_frame = tk.Frame(self.root, bg=GREY_BG) 
     text_frame.pack(fill="both", expand=True)
 
     notes_text = tk.Text(text_frame, wrap="word", font=("Helvetica", 13),
@@ -144,13 +178,16 @@ def note_edit_screen(self, note_id, note_title):
     
     def save_note():
         """Saves the current note to the database."""
+        # Read the complete content of the text without including extra newline character
         new_body = notes_text.get("1.0", "end-1c")
+        # Update only the edited note while leaving all other notes unchanged
         cursor.execute(
             "UPDATE notes SET body=? WHERE id=?",
             (new_body, note_id)
         )
         self.db.commit()
-        messagebox.showinfo("Saved", "Your changes have been saved.")#Messagebox to confirm that the note has been saved
+        #Messagebox to confirm that the note has been saved
+        messagebox.showinfo("Saved", "Your changes have been saved.")
 
     save_lbl=tk.Label(save_bar, text="Save", bg=NAVY_BLUE, fg="white",
                 relief="flat", font=("Helvetica", 11),padx=14, pady=6)

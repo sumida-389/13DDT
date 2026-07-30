@@ -5,12 +5,14 @@ class DatabaseSetup:
     def __init__(self,db_path="study_app.db"):
         """Creates the database connection and sets up the database file."""
         self.db_path = db_path
-        self.settings_win = None # Checks if the settings window is open
-        self.connection = sqlite3.connect(db_path)#Connect to the database file (creates it if it doesn't exist)
+        # Checks if the settings window is open
+        self.settings_win = None 
+        #Connect to the database file (creates it if it doesn't exist)
+        self.connection = sqlite3.connect(db_path)
                 
     def create_tables(self): 
         """Creates the tables in the database if they don't already exist."""
-        cursor = self.connection.cursor() #cursor object to execute SQL commands
+        cursor = self.connection.cursor() 
 
         #Users table
         cursor.execute("""
@@ -60,7 +62,7 @@ class DatabaseSetup:
             )
         """)
         
-        #Quiz + questions tables
+        #Quiz tables
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quizzes (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,6 +73,7 @@ class DatabaseSetup:
         """)
         self.connection.commit()
         
+        #Questions table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quiz_questions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,6 +86,7 @@ class DatabaseSetup:
                 correct TEXT NOT NULL,
                 FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE)
                 """)
+        #Quiz score table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quiz_attempts (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,6 +99,8 @@ class DatabaseSetup:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         """)
+        
+        #Calender events table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS calendar_events (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +111,7 @@ class DatabaseSetup:
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)
             """)
         
+        #Reminders table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS reminders (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
