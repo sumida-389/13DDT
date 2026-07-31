@@ -35,10 +35,6 @@ class DatabaseSetup:
         self.connection.commit()
 
 
-
-
-
-
         #Notes table
 
         cursor.execute("""

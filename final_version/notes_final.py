@@ -229,10 +229,6 @@ def note_edit_screen(self, note_id, note_title):
 
 
 
-    cursor.execute("SELECT body FROM notes WHERE id=?", (note_id,))
-    existing = cursor.fetchone()
-    if existing:
-        notes_text.insert("1.0", existing[0])
 
     save_bar = tk.Frame(self.root, bg=GREY_BG)
     save_bar.pack(fill="x")
