@@ -2,7 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox
 import json
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR
+from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR, LIGHT_GREY
 from helpers_final import clear_screen, make_hover_background
 
 
@@ -48,7 +48,6 @@ def notes_screen(self):
     back_notes=tk.Label(footer, text="Back", bg=NAVY_BLUE, fg="white",padx=14, pady=6,)
     back_notes.pack(side="right", padx=25, pady=15)
     
-    # Apply hover effects and allow the Back label to return to the home screen
     make_hover_background(back_notes,NAVY_BLUE,BLUE_HOVER_COLOR,self.home_screen)
     
     def create_section():
@@ -56,6 +55,9 @@ def notes_screen(self):
         
         # Remove leading and trailing spaces so users cannot create titles using only whitespace
         title = new_title_entry.get().strip()
+        if title == "":
+            status_lbl.config(text="Please enter a title.")
+            return
         try:
             cursor.execute(
                 "INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)",
@@ -114,7 +116,7 @@ def notes_screen(self):
         rows = cursor.fetchall()
         if not rows:
             tk.Label(inner, text="No notes yet!",
-                        bg=GREY_BG, fg="#888888",
+                        bg=GREY_BG, fg=LIGHT_GREY,
                         font=("Helvetica", 12)).pack(pady=30)
             return
         for note_id, note_title, note_body in rows:

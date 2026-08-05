@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR
+from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR, LIGHT_GREY
 from helpers_final import clear_screen, make_hover_background
 
 def quiz_screen(self):  
@@ -21,11 +21,15 @@ def quiz_screen(self):
     quiz_name_entry = tk.Entry(top, width=30)
     quiz_name_entry.pack(side="left", padx=5)
     
+    status_quiz=tk.Label(top, text="", bg=GREY_BG, fg=DARK_RED)
+    status_quiz.pack(side="left", padx=5,pady=5)
+    
     def create_quiz():
         """ Creates a new quiz in the database."""
         name = quiz_name_entry.get().strip()
         # If the name is empty dont let user create quiz
         if not name: 
+            status_quiz.config(text="Enter a quiz name")
             return
         cursor.execute("INSERT INTO quizzes (user_id, title) VALUES (?, ?)",
                         (self.current_user_id, name))
@@ -59,7 +63,7 @@ def quiz_screen(self):
         quizzes = cursor.fetchall()
         if not quizzes:
             tk.Label(list_frame, text="No quizzes yet!",
-                        bg="white", fg="#888888").pack(pady=20)
+                        bg="white", fg=LIGHT_GREY).pack(pady=20)
             return
         # Create a row for each quiz with buttons to edit, take, or delete the quiz
         for qid, qtitle in quizzes: 
@@ -155,7 +159,7 @@ def quiz_edit_screen(self, quiz_id, quiz_title):
         rows = cursor.fetchall()
         # If there are no questions in the quiz, display a message
         if not rows: 
-            tk.Label(q_frame, text="No questions yet!", bg="white", fg="#888888").pack()
+            tk.Label(q_frame, text="No questions yet!", bg="white", fg=LIGHT_GREY).pack()
             return
         # Create a row for each question with the question text and the correct answer displayed
         for qid, qtxt, qans in rows: 
@@ -211,7 +215,7 @@ def take_quiz(self, quiz_id, quiz_title):
             return
         _, qtxt, a, b, c, d, correct = questions[idx]
 
-        tk.Label(win, text=qtxt, bg="white", fg="#0d0d0d",
+        tk.Label(win, text=qtxt, bg="white", fg="black",
                 font=("Helvetica", 13, "bold"), wraplength=520,
                 justify="left").pack(anchor="w", padx=30, pady=(0, 16))
         # Variable to keep track of the selected answer

@@ -2,7 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR,RED_HOVER_COLOR
+from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR,RED_HOVER_COLOR, LIGHT_GREY
 from helpers_final import clear_screen, make_hover_background
 
 def flashcards_screen(self):
@@ -117,7 +117,7 @@ def flashcards_screen(self):
         # Display if user has not created any flashcard sets yet
         if not decks:
             tk.Label(list_frame, text="No flashcards yet!",
-                        bg=GREY_BG, fg="#888888",
+                        bg=GREY_BG, fg=LIGHT_GREY,
                         font=("Helvetica", 12)).pack(pady=30)
             # If there are no decks, display a message and return
             return
@@ -132,16 +132,16 @@ def flashcards_screen(self):
 
             left = tk.Frame(deck_card, bg=GREY_BG)
             left.pack(side="left", fill="both", expand=True, padx=14, pady=12)
-            tk.Label(left, text=deck_name, bg=GREY_BG, fg="#0d0d0d",
+            tk.Label(left, text=deck_name, bg=GREY_BG, fg="black",
                         font=("Helvetica", 13, "bold"), anchor="w").pack(anchor="w")
             tk.Label(left, text=f"{count} card{'s' if count != 1 else ''}",
-                        bg=GREY_BG, fg="#888888",
+                        bg=GREY_BG, fg=LIGHT_GREY,
                         font=("Helvetica", 10), anchor="w").pack(anchor="w")
 
             btn_frame = tk.Frame(deck_card, bg=GREY_BG)
             btn_frame.pack(side="right", padx=10, pady=8)
             
-            # Lambda stores the current deck values so each button opens the correct deck
+            # Lambda is a throwaway function stores the current deck values so each button opens the correct deck
             tk.Button(btn_frame, text="Edit", fg=NAVY_BLUE, relief="flat",
                         font=("Helvetica", 10,"bold"), padx=8,
                         command=lambda did=deck_id, dname=deck_name:
@@ -229,7 +229,7 @@ def deck_edit_screen(self, deck_id, deck_name):
     add_card_lbl=tk.Label(add_frame, text="Add Card", bg=NAVY_BLUE, fg="white",
                 relief="flat", font=("Helvetica", 11, "bold"),padx=12, pady=5)
     add_card_lbl.grid(row=4, column=0, columnspan=2, pady=10)
-     # Make the "Add Card" label look like a button and call add_card when clicked
+     # Make the label look like a button and call add_card when clicked
     make_hover_background(add_card_lbl,NAVY_BLUE,BLUE_HOVER_COLOR,add_card)
     list_frame = tk.Frame(self.root, bg=GREY_BG)
     list_frame.pack(fill="both", expand=True, padx=20, pady=5)
@@ -246,7 +246,7 @@ def deck_edit_screen(self, deck_id, deck_name):
         cards = cursor.fetchall()
         if not cards:
             tk.Label(list_frame, text="No cards yet. Add one above!",
-                        bg=GREY_BG, fg="#888888",
+                        bg=GREY_BG, fg=LIGHT_GREY,
                         font=("Helvetica", 11)).pack(pady=20) 
             return
         for card_id, front, back in cards: 
@@ -309,7 +309,7 @@ def study_deck(self, deck_id, deck_name):
     card_frame.pack(expand=True)
     card_frame.pack_propagate(False)
 
-    card_label = tk.Label(card_frame, text="", bg=GREY_BG, fg="#0d0d0d",
+    card_label = tk.Label(card_frame, text="", bg=GREY_BG, fg="black",
                             font=("Helvetica", 17), wraplength=480,
                             justify="center")
     card_label.place(relx=0.5, rely=0.45, anchor="center")
@@ -349,7 +349,7 @@ def study_deck(self, deck_id, deck_name):
         state["flipped"] = False 
         card_frame.config(bg="white")
         # Display the questoin and reset the background
-        card_label.config(text=current[1], bg=GREY_BG, fg="#0d0d0d") 
+        card_label.config(text=current[1], bg=GREY_BG, fg="black") 
         
         
 
@@ -366,7 +366,7 @@ def study_deck(self, deck_id, deck_name):
             state["flipped"] = True
         else:
             card_frame.config(bg=GREY_BG)
-            card_label.config(text=current[1], bg=GREY_BG, fg="#0d0d0d")
+            card_label.config(text=current[1], bg=GREY_BG, fg="black")
             state["flipped"] = False
 
     card_frame.bind("<Button-1>", flip_card)
@@ -379,7 +379,7 @@ def study_deck(self, deck_id, deck_name):
         # Remove the current card from the queue
         queue.pop(state["idx"] % len(queue)) 
         if queue:
-            # If there are still cards left, keep the index within bounds
+            # If there are still cards left, keep the index within number
             state["idx"] = state["idx"] % len(queue)
         # If there are still cards left, show the next card else show the summary screen 
         next_card() if queue else show_summary() 

@@ -2,7 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, RED_HOVER_COLOR
+from constants_final import DARK_RED, RED_HOVER_COLOR,LIGHT_GREY
 from databasesetup_final import hash_password
 from helpers_final import clear_screen, make_hover_background
 
@@ -29,7 +29,7 @@ def login_screen(self):
     # Link to register
     sub_text = tk.Frame(form, bg="white")
     sub_text.pack(anchor="w", pady=(6, 24))
-    tk.Label(sub_text, text="No account? ", bg="white", fg="#888888",
+    tk.Label(sub_text, text="No account? ", bg="white", fg=LIGHT_GREY,
                 font=("Helvetica", 11)).pack(side="left")
     tk.Label(sub_text, text="Register here", bg="white", fg=DARK_RED,
                 font=("Helvetica", 11, "underline")).pack(side="left")
@@ -99,12 +99,12 @@ def register_screen(self):
     form = tk.Frame(right_frame, bg="white")
     form.place(relx=0.5, rely=0.5, anchor="center")
 
-    tk.Label(form, text="Welcome to Focalize", bg="white", fg="#0d0d0d",
+    tk.Label(form, text="Welcome to Focalize", bg="white", fg="black",
                 font=("Helvetica", 22, "bold")).pack(anchor="w")
     
     sub = tk.Frame(form, bg="white")
     sub.pack(anchor="w", pady=(6, 24))
-    tk.Label(sub, text="Already registered?", bg="white", fg="#888888",
+    tk.Label(sub, text="Already registered?", bg="white", fg=LIGHT_GREY,
                 font=("Helvetica", 11)).pack(side="left")
     tk.Label(sub, text="Login here", bg="white", fg=DARK_RED,
                 font=("Helvetica", 11, "underline")).pack(side="left")

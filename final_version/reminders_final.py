@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, BLUE_HOVER_COLOR
+from constants_final import DARK_RED, NAVY_BLUE, BLUE_HOVER_COLOR, LIGHT_GREY
 from helpers_final import clear_screen, make_hover_background
 
 def reminders_screen(self):
@@ -28,12 +28,12 @@ def reminders_screen(self):
     re_title.grid(row=0, column=1, padx=5, sticky="w")
         #Entry to enter the reminders date
     tk.Label(form, text="Date:", bg="white").grid(row=1, column=0, sticky="w", pady=4)
-    tk.Label(form, text="(YYYY-MM-DD)", bg="white", fg="#888888", font=("Helvetica", 8)).grid(row=2, column=0, sticky="w")
+    tk.Label(form, text="(YYYY-MM-DD)", bg="white", fg=LIGHT_GREY, font=("Helvetica", 8)).grid(row=2, column=0, sticky="w")
     re_date = tk.Entry(form, width=20)
     re_date.grid(row=1, column=1, padx=5, sticky="w")
     #Entry to enter the reminders time
     tk.Label(form, text="Time:", bg="white").grid(row=3, column=0, sticky="w", pady=4)
-    tk.Label(form, text="(24hr HH:MM)", bg="white", fg="#888888", font=("Helvetica", 8)).grid(row=4, column=0, sticky="w")
+    tk.Label(form, text="(24hr HH:MM)", bg="white", fg=LIGHT_GREY, font=("Helvetica", 8)).grid(row=4, column=0, sticky="w")
     re_time = tk.Entry(form, width=20)
     re_time.grid(row=3, column=1, padx=5, sticky="w")
     
@@ -134,7 +134,7 @@ def reminders_screen(self):
             (self.current_user_id,))
         rows = cursor.fetchall()
         if not rows:
-            tk.Label(list_frame, text="No reminders yet!", bg="white", fg="#888888").pack(pady=10)
+            tk.Label(list_frame, text="No reminders yet!", bg="white", fg=LIGHT_GREY).pack(pady=10)
             return
         for reminder_id, reminder_title, reminder_at, fired in rows:
             # See which reminders are overdue so it can be visually highlighted

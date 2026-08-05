@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, BLUE_HOVER_COLOR
+from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, BLUE_HOVER_COLOR, LIGHT_GREY
 from helpers_final import clear_screen, make_hover_background
 
 def calendar_screen(self):
@@ -26,11 +26,18 @@ def calendar_screen(self):
 
     # Return the user to the home screen when back is clicked
     make_hover_background(back_cal,NAVY_BLUE,BLUE_HOVER_COLOR,self.home_screen)
-
+    
+    #Button to add events to calendar
+    add_btn = tk.Label(header, text="+ Add Event", bg=DARK_RED, fg="white",
+                        padx=14, pady=6, cursor="hand2",
+                        highlightbackground="white")
+    add_btn.pack(pady=5, side="right", padx=8)
+    
+    
     # Navigation bar to switch months
     nav = tk.Frame(self.root, bg="white")
     nav.pack()
-    left_btn=tk.Label(nav, text="◄", bg="white", fg=DARK_RED,width="4", font=("Helvetica", 20), cursor="hand2")
+    left_btn=tk.Label(nav, text="◀", bg="white", fg=DARK_RED,width="4", font=("Helvetica", 20), cursor="hand2")
     left_btn.pack(side="left", padx=10, pady=10)
     def prev_month(event=None):
         """ Moves to the previous month in the calendar."""
@@ -59,64 +66,83 @@ def calendar_screen(self):
     # Displays the current month and year   
     month_lbl = tk.Label(nav, text="", bg="white",fg=DARK_RED,font=("Helvetica", 26, "bold"), width=20)
     month_lbl.pack(side="left")
-
-    # main area
-    main = tk.Frame(self.root, bg="white")
-    main.pack(fill="both", expand=True, padx=10)
-
-    # left panel calendar
-    cal_frame = tk.Frame(main, bg="white")
-    cal_frame.pack(side="left", fill="both", expand=True)
-
-    # right panel events + add form
-    right_panel = tk.Frame(main, width=260)
-    right_panel.pack(side="right", fill="y", padx=(10,0))
-    right_panel.pack_propagate(False)
-
-    event_list_frame = tk.Frame(right_panel, bg=GREY_BG)
-    event_list_frame.pack(fill="both", expand=True)
-
-    tk.Label(right_panel, text="Events this month", bg="white",
-                font=("Helvetica", 11, "bold")).pack(pady=(10,4))
     
-    add_form = tk.LabelFrame(right_panel, text="add event", bg=GREY_BG, font=("Helvetica", 9))
-    add_form.pack(fill="x", padx=6, pady=6)
     
-    tk.Label(add_form, text="title", bg=GREY_BG, font=("Helvetica", 9)).grid(row=0, column=0, sticky="w", padx=4)
-    event_name = tk.Entry(add_form, width=18, font=("Helvetica", 9))
-    event_name.grid(row=0, column=1, padx=4, pady=2)
     
-    tk.Label(add_form, text="Date:", bg=GREY_BG, font=("Helvetica", 9)).grid(row=1, column=0, sticky="w", padx=4)
-    event_date = tk.Entry(add_form, width=18, font=("Helvetica", 9))
-    event_date.grid(row=1, column=1, padx=4, pady=2)
-    # Pre-fill the date entry with todays date
-    event_date.insert(0, now.strftime("%Y-%m-%d")) 
-    tk.Label(add_form, text="Type:", bg=GREY_BG, font=("Helvetica", 9)).grid(row=2, column=0, sticky="w", padx=4)
-    type_var = tk.StringVar(value="exam")
-    # Dropdown menu for selecting the event category
-    tk.OptionMenu(add_form, type_var, "exam", "assignment", "study", "other").grid(row=2, column=1, sticky="w", padx=4)  # Create a dropdown menu for selecting the event type     
-    def load_event_list():
-        # Remove old event labels before loading updated events
-        for widgets in event_list_frame.winfo_children():
-            widgets.destroy()
-        # Get the current year and month from the state dictionary
-        y, m = state["year"], state["month"] 
-        cursor.execute(
-            "SELECT title, event_date, event_type FROM calendar_events "
-            "WHERE user_id=? AND event_date LIKE ? ORDER BY event_date",
-            (self.current_user_id, f"{y:04d}-{m:02d}-%"))
-        rows = cursor.fetchall()
-        if not rows:
-            tk.Label(event_list_frame, text="No events.", bg=GREY_BG,
-                    fg="#888888", font=("Helvetica", 9)).pack(pady=6)
-            return
-        # Create a row for each event with the date and title displayed
-        for ev_title, ev_date, ev_type in rows: 
-            rf = tk.Frame(event_list_frame, bg=GREY_BG)
-            rf.pack(fill="x", pady=1, padx=4)
-            tk.Label(rf, text=f"{ev_date[8:]}  {ev_title}", bg=GREY_BG,
-                    font=("Helvetica", 9)).pack(side="left", padx=2)
-        
+    
+    #The main area of the calendar
+    main = tk.Frame(self.root, bg=GREY_BG)
+    #Footer to show event types
+    footer = tk.Frame(self.root, bg="white")
+
+    main.pack(fill="both", expand=True)
+    footer.pack(fill="x", pady=(5, 10))
+
+    #Calendar grid/frame
+    cal_frame = tk.Frame(main, bg=GREY_BG)
+    cal_frame.pack(fill="both", expand=True)
+
+    # make every column/row stretch evenly so the boxes fill the screen
+    for col in range(7):
+        cal_frame.grid_columnconfigure(col, weight=1, uniform="cal_col")
+    for row in range(1, 7):
+        cal_frame.grid_rowconfigure(row, weight=1, uniform="cal_row")
+
+
+    #event=none so function can be called from button
+    def open_add_event_popup(event=None):
+        """Popup window opens when user clicks add button for an event to be added to the calender"""
+        add_event_popup = tk.Toplevel(self.root)
+        add_event_popup.title("Add Event")
+        add_event_popup.configure(bg=GREY_BG)
+        add_event_popup.resizable(False, False)
+        #Child window hence will be on top of main window and be resized with it
+        add_event_popup.transient(self.root)
+        # Makes window modal so that users can't interact with the main window while this is open
+        add_event_popup.grab_set()
+
+        form = tk.Frame(add_event_popup, bg=GREY_BG, padx=14, pady=14)
+        form.pack(fill="both", expand=True)
+
+        tk.Label(form, text="Title", bg=GREY_BG, font=("Helvetica", 10)).grid(row=0, column=0, sticky="w", padx=4, pady=4)
+        event_name = tk.Entry(form, width=24, font=("Helvetica", 10))
+        event_name.grid(row=0, column=1, padx=4, pady=4)
+
+        tk.Label(form, text="Date (YYYY-MM-DD)", bg=GREY_BG, font=("Helvetica", 10)).grid(row=1, column=0, sticky="w", padx=4, pady=4)
+        event_date = tk.Entry(form, width=24, font=("Helvetica", 10))
+        event_date.grid(row=1, column=1, padx=4, pady=4)
+        event_date.insert(0, f"{state['year']:04d}-{state['month']:02d}-{now.day:02d}")
+
+        tk.Label(form, text="Type", bg=GREY_BG, font=("Helvetica", 10)).grid(row=2, column=0, sticky="w", padx=4, pady=4)
+        type_var = tk.StringVar(value="exam")
+        tk.OptionMenu(form, type_var, "exam", "assignment", "study", "other").grid(row=2, column=1, sticky="w", padx=4, pady=4)
+
+        def add_event():
+            """Add events to the calendar"""
+            name = event_name.get()
+            ev_date = event_date.get()
+            ev_type = type_var.get()
+            try:
+                #Validate date ensure its in correct format
+                datetime.strptime(ev_date, "%Y-%m-%d")
+            except ValueError:
+                messagebox.showwarning("Bad date", "Use Year-Month-Day!")
+                return
+
+            if not name:
+                messagebox.showwarning("No title", "Enter an event title")
+                return
+            cursor.execute(
+                "INSERT INTO calendar_events (user_id, title, event_date, event_type) VALUES (?,?,?,?)",
+                (self.current_user_id, name, ev_date, ev_type))
+            self.db.commit()
+            add_event_popup.destroy()
+            actual_calendar()
+
+        tk.Button(form, text="Add Event", command=add_event, font=("Helvetica", 10)).grid(row=3, column=0, columnspan=2, pady=(10, 0))
+
+    add_btn.bind("<Button-1>", open_add_event_popup)
+
             
     def actual_calendar():
         """Display the calendar with numbers in boxes and days on top"""
@@ -126,64 +152,69 @@ def calendar_screen(self):
         y, m = state["year"], state["month"] 
         month_lbl.config(text=datetime(y, m, 1).strftime("%B %Y"))
 
+        #Get events for current month from specific user and strore them in dict
         cursor.execute(
-            "SELECT event_date, event_type FROM calendar_events WHERE user_id=? AND event_date LIKE ?",
+            "SELECT title, event_date, event_type FROM calendar_events WHERE user_id=? AND event_date LIKE ?",
             (self.current_user_id, f"{y:04d}-{m:02d}-%"))
-        event_map = {}
-        # Create a mapping of days to event types for coloring the calendar cells
-        for ed, et in cursor.fetchall(): 
-            day = int(ed[8:])
-            event_map.setdefault(day, []).append(et)
-        # Create the header row for the days of the week
-        for col, dn in enumerate(["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]): 
-            tk.Label(cal_frame, text=dn, bg="white", fg="#888888",
-                        font=("Helvetica",11, "bold"), width=7).grid(row=0, column=col, pady=(0,2))
+        #Map of days-events for month(day is key and value is list of title & type)
+        event_map={}
+        for ev_title, ed, et in cursor.fetchall():
+            day=int(ed[8:])
+            event_map.setdefault(day, []).append((ev_title, et))
 
-        first_wd = date(y, m, 1).weekday()
-        days_in  = cal.monthrange(y, m)[1]
-        today    = now.day if (y == now.year and m == now.month) else -1
-        # Start the row and column for the first day of the month based on the weekday of the first day
-        r, c = 1, first_wd 
+        for col, dn in enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]):
+            tk.Label(cal_frame, text=dn, bg="white", fg="black",
+                     font=("Helvetica", 11, "bold")).grid(row=0, column=col, sticky="nsew")
+        #Get first weekday of month and number of days in month
+        first_wd=date(y, m, 1).weekday()
+        days_in=cal.monthrange(y, m)[1]
+        today=now.day if (y == now.year and m == now.month) else -1
+
+        #look thorugh each day of month and create cell
+        r, c = 1, first_wd
         for d in range(1, days_in + 1):
-            evts = event_map.get(d, [])
-            first_type = evts[0] if evts else None
-            bg = "#bbdefb" if d == today else (TYPE_COLORS.get(first_type, "white") if first_type else "white")          
-            cell = tk.Frame(cal_frame, bg=bg, width=100, height=100, relief="solid", bd=1)
-            cell.grid(row=r, column=c, padx=1, pady=1)
-            # Prevent the cell from resizing if the content inside is large
-            cell.grid_propagate(False) 
-            tk.Label(cell, text=str(d), bg=bg, fg="#0d0d0d",
-                        font=("Helvetica", 15, "bold" if d == today else "normal")).pack(anchor="nw", padx=3)
-            # Move to the next column for the next day
+            #Get events for current day
+            evts=event_map.get(d, [])
+            if evts:
+                bg = TYPE_COLORS.get(evts[0][1], "white")
+            else:
+                bg = "white"
+
+            cell=tk.Frame(cal_frame, bg=bg, relief="solid", bd=1)
+            cell.grid(row=r, column=c, sticky="nsew", padx=0, pady=0)
+            cell.grid_propagate(False)
+
+            day_lbl=tk.Label(cell, text=str(d), bg=bg, fg=DARK_RED if d == today else "black",
+                                font=("Helvetica", 12, "bold" if d == today else "normal"))
+            day_lbl.pack(anchor="nw", padx=4, pady=2)
+
+            max_shown =2
+            for ev_title, ev_type in evts[:max_shown]:
+                #Get colour for event, grey if not used
+                swatch_color = TYPE_COLORS.get(ev_type, "#cccccc")
+                ev_row = tk.Frame(cell, bg=bg)
+                ev_row.pack(fill="x", padx=3, pady=1, anchor="nw")
+                tk.Label(ev_row, text="●", bg=bg, fg=swatch_color, font=("Helvetica", 8)).pack(side="left")
+                tk.Label(ev_row, text=ev_title, bg=bg, fg="#222222",
+                         font=("Helvetica", 8), anchor="w").pack(side="left", padx=(2, 0))
+            if len(evts) > max_shown:
+                #If more events than can be shown(3), show + with number of evetns.
+                tk.Label(cell, text=f"+{len(evts) - max_shown} more", bg=bg, fg=LIGHT_GREY,
+                         font=("Helvetica", 8)).pack(anchor="nw", padx=4)
+            #Move to next column and if end of week(c=7), move to next row.
             c += 1
-            # If the column index reaches 7 (end of the week), reset to the first column and move to the next row
-            if c == 7: 
-                c, r = 0, r + 1
+            if c == 7:
+                c, r = 0, r + 1  
+                
 
-        load_event_list()    
-    
-    def add_event():
-        """Add events to the calendar"""
-        name=event_name.get()
-        date=event_date.get()
-        type=type_var.get()
-        try:
-            datetime.strptime(date, "%Y-%m-%d")
-        # If the date format is invalid, show a warning message
-        except ValueError: 
-            messagebox.showwarning("Bad date", "Use Year-Month-Day!")
-            return
-        
-        if not name:
-            messagebox.showwarning("No title", "Enter an event title")
-            return
-        cursor.execute(
-            "INSERT INTO calendar_events (user_id, title, event_date, event_type) VALUES (?,?,?,?)",
-            (self.current_user_id, name, date, type))
-        self.db.commit()
-        event_name.delete(0, "end")
-        actual_calendar()
+    for event_type, colour in TYPE_COLORS.items():
+        item = tk.Frame(footer, bg="white")
+        item.pack(side="left", padx=12)
 
-    tk.Button(add_form, text="Add Event", command=add_event,
-            font=("Helvetica", 9)).grid(row=3, column=0, columnspan=2, pady=4)
+        tk.Label(item,text="●",fg=colour,bg="white",
+                    font=("Helvetica", 15)).pack(side="left")
+
+        tk.Label(item,text=event_type.capitalize(),bg="white",fg="#555555",
+        font=("Helvetica", 10)).pack(side="left", padx=(2, 0))        
+                        
     actual_calendar()

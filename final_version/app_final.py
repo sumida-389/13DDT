@@ -18,7 +18,7 @@ class AppFace:
         """Sets up the database and window"""
         self.root = root
         self.root.title("Focalize")
-        self.root.geometry("1100x700")
+        self.root.geometry("1100x750")
         # no one logged in yet
         self.current_user_id = None 
         # Store the username after login so it can be displayed

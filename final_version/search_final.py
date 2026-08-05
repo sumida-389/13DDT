@@ -1,6 +1,6 @@
 import tkinter as tk
 
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG
+from constants_final import DARK_RED, NAVY_BLUE, GREY_BG , LIGHT_GREY
 from helpers_final import make_hover_foreground
 
 
@@ -15,7 +15,7 @@ def open_search_panel(self):
     panel.place(x=760, y=0)
     panel.pack_propagate(False)
     
-    close_lbl = tk.Label(panel, text="✕ Close", bg="white", fg="#888888",
+    close_lbl = tk.Label(panel, text="✕ Close", bg="white", fg=LIGHT_GREY,
                             font=("Helvetica", 10), cursor="hand2")
     close_lbl.pack(anchor="ne", padx=10, pady=10)
     #Close the panel(destroy the widget) once the close label is pressed
@@ -53,7 +53,7 @@ def open_search_panel(self):
                              anchor="w", cursor="hand2",wraplength=190, justify="left")
         title_lbl.pack(side="left", padx=(0, 6))
 
-        type_lbl = tk.Label(row, text=type_label, bg="white", fg="#888888",
+        type_lbl = tk.Label(row, text=type_label, bg="white", fg=LIGHT_GREY,
                                 font=("Helvetica", 8), anchor="e")
         type_lbl.pack(side="right")
         
@@ -134,7 +134,7 @@ def open_search_panel(self):
         
         if not results_frame.winfo_children():
             tk.Label(results_frame, text="No results found.", bg="white",
-                    fg="#888888", font=("Helvetica", 10)).pack(pady=20)
+                    fg=LIGHT_GREY, font=("Helvetica", 10)).pack(pady=20)
 
     search_entry.bind("<KeyRelease>", run_search)
 

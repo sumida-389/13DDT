@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
- 
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, RED_HOVER_COLOR
+from PIL import Image, ImageTk
+from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, RED_HOVER_COLOR, LIGHT_GREY
 from helpers_final import clear_screen, make_hover_background, make_hover_foreground
 
 def home_screen(self):
@@ -101,10 +101,10 @@ def home_screen(self):
     note_rows = cursor.fetchall()
     if not note_rows:
         tk.Label(notes_body, text="No notes yet!",
-                    bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
+                    bg="white", fg=LIGHT_GREY, font=("Helvetica", 10)).pack(pady=10)
     else:
         for nid, ntitle in note_rows:
-            lbl = tk.Label(notes_body, text=f"{ntitle}", bg="white", fg="#0d0d0d",
+            lbl = tk.Label(notes_body, text=f"{ntitle}", bg="white", fg="black",
                             font=("Helvetica", 11), anchor="w", cursor="hand2")
             lbl.pack(fill="x", pady=2)
             #Store the current deck values so each label opens the correct flashcard deck when clicked
@@ -118,18 +118,18 @@ def home_screen(self):
     deck_rows = cursor.fetchall()
     if not deck_rows:
         tk.Label(fc_body, text="No flashcard sets yet!",
-                    bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
+                    bg="white", fg=LIGHT_GREY, font=("Helvetica", 10)).pack(pady=10)
     else:
         for did, dname in deck_rows:
             cursor.execute("SELECT COUNT(*) FROM flashcards WHERE deck_id=?", (did,))
             ccount = cursor.fetchone()[0]
             row = tk.Frame(fc_body, bg="white")
             row.pack(fill="x", pady=2)
-            lbl = tk.Label(row, text=f"{dname}", bg="white", fg="#0d0d0d",
+            lbl = tk.Label(row, text=f"{dname}", bg="white", fg="black",
                             font=("Helvetica", 11), anchor="w", cursor="hand2")
             lbl.pack(side="left")
             tk.Label(row, text=f"{ccount} card{'s' if ccount != 1 else ''}", bg="white",
-                        fg="#888888", font=("Helvetica", 9)).pack(side="right")
+                        fg=LIGHT_GREY, font=("Helvetica", 9)).pack(side="right")
             # Store the current deck values so each label opens the correct flashcard deck when clicked
             lbl.bind("<Button-1>", lambda e, i=did, t=dname: self.study_deck(i, t))
     
@@ -148,10 +148,10 @@ def home_screen(self):
     last_attempt = cursor.fetchone()
     if not last_attempt:
         tk.Label(quiz_body, text="Take a quiz!",
-                    bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10) 
+                    bg="white", fg=LIGHT_GREY, font=("Helvetica", 10)).pack(pady=10) 
     else:
         score, total, qtitle, qid=last_attempt
-        tk.Label(quiz_body, text=qtitle, bg="white", fg="#0d0d0d",
+        tk.Label(quiz_body, text=qtitle, bg="white", fg="black",
                 font=("Helvetica", 12, "bold"), anchor="w").pack(anchor="w")
         tk.Label(quiz_body, text=f"Latest score: {score} / {total}", bg="white",
                 fg=NAVY_BLUE, font=("Helvetica", 14, "bold"), anchor="w"
@@ -175,7 +175,7 @@ def home_screen(self):
     todays_events = cursor.fetchall()
     if todays_events:
         #event title
-        tk.Label(cal_body, text="Today", bg="white", fg="#888888",
+        tk.Label(cal_body, text="Today", bg="white", fg=LIGHT_GREY,
                     font=("Helvetica", 9, "bold")).pack(anchor="w") 
         for ev_title, ev_date, ev_type in todays_events:
             # Use colour coding to make different event types easier for users to identify
@@ -217,16 +217,16 @@ def home_screen(self):
     rem_rows = cursor.fetchall()
     if not rem_rows:
         tk.Label(rem_body, text="No reminders set for this month.",
-                    bg="white", fg="#888888", font=("Helvetica", 10)).pack(pady=10)
+                    bg="white", fg=LIGHT_GREY, font=("Helvetica", 10)).pack(pady=10)
     else:
         for rtitle, rat, fired in rem_rows:
             #Show a different icon depending on whether the reminder has already been triggered
             icon = "✔" if fired else "○"
             cell = tk.Frame(rem_body, bg=GREY_BG, relief="solid", bd=1)
             cell.pack(fill="x", pady=2)
-            tk.Label(cell, text=f"{icon}  {rtitle}", bg=GREY_BG, fg="#0d0d0d",
+            tk.Label(cell, text=f"{icon}  {rtitle}", bg=GREY_BG, fg="black",
                         font=("Helvetica", 10)).pack(side="left", padx=8, pady=4)
-            tk.Label(cell, text=rat, bg=GREY_BG, fg="#888888",
+            tk.Label(cell, text=rat, bg=GREY_BG, fg=LIGHT_GREY,
                         font=("Helvetica", 9)).pack(side="right", padx=8)
 
     
@@ -239,14 +239,18 @@ def open_settings_sidebar(self):
     panel.place(x=830, y=0) 
     panel.pack_propagate(False)
 
-    close_lbl = tk.Label(panel, text="✕ Close", bg="white", fg="#888888",
+    close_lbl = tk.Label(panel, text="✕ Close", bg="white", fg=LIGHT_GREY,
                             font=("Helvetica", 10), cursor="hand2")
     close_lbl.pack(anchor="ne", padx=10, pady=10)
     close_lbl.bind("<Button-1>", lambda e: panel.destroy())
 
-    tk.Label(panel, text="👤", bg="white", font=("Helvetica", 30)).pack(pady=(20, 4))
+    profile_img = Image.open("images/profile.png")  
+    profile_img = profile_img.resize((100, 100))
+    self.profile_img  = ImageTk.PhotoImage(profile_img)
+
+    tk.Label(panel, image=self.profile_img, bg="white", font=("Helvetica", 30)).pack(pady=(20, 4))
     #Shows the username of the logged in user
-    tk.Label(panel, text=self.current_username, bg="white", fg="#0d0d0d",
+    tk.Label(panel, text=self.current_username, bg="white", fg="black",
                 font=("Helvetica", 14, "bold")).pack(pady=(0, 30))
     
     # Study streak with fire icon 
@@ -255,10 +259,13 @@ def open_settings_sidebar(self):
     streak_row = cursor.fetchone()
     streak_count = streak_row[0] if streak_row and streak_row[0] else 0
 
+    fire_img = Image.open("images/fire.png")   # path to my image
+    fire_img = fire_img.resize((24, 24))       # resize to fit in the panel
+    self.fire_icon = ImageTk.PhotoImage(fire_img) # make the image uasble by changing it to photoimage
+
     streak_frame = tk.Frame(panel, bg="white")
     streak_frame.pack(pady=(0, 30))
-    tk.Label(streak_frame, text="🔥", bg="white",
-                font=("Helvetica", 22)).pack(side="left", padx=(0, 6))
+    tk.Label(streak_frame, image=self.fire_icon, bg="white").pack(side="left", padx=(0, 6))
     tk.Label(streak_frame, text=streak_count,
                 bg="white", fg=DARK_RED, font=("Helvetica", 13, "bold")).pack(side="left")
 
