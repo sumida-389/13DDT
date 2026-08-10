@@ -58,6 +58,9 @@ def notes_screen(self):
         if title == "":
             status_lbl.config(text="Please enter a title.")
             return
+        if len(title)>30:
+            status_lbl.config(text="Title must be less than 30 characters")
+            return
         try:
             cursor.execute(
                 "INSERT INTO notes (user_id, title, body) VALUES (?, ?, ?)",

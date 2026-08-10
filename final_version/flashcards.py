@@ -2,7 +2,7 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox
  
-from constants import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR,RED_HOVER_COLOR, LIGHT_GREY
+from constants import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR,RED_HOVER_COLOR, LIGHT_GREY, DARK_BLUE
 from helpers import clear_screen, make_hover_background
 
 def flashcards_screen(self):
@@ -285,7 +285,7 @@ def study_deck(self, deck_id, deck_name):
     win = tk.Toplevel(self.root)
     win.title(deck_name)
     win.geometry("700x520")
-    win.configure(bg="#1a1a2e")
+    win.configure(bg=DARK_BLUE)
     # Make the study window modal so the user can't interact with the main window until they close it
     win.grab_set() 
 
@@ -297,10 +297,10 @@ def study_deck(self, deck_id, deck_name):
         "total": len(all_cards),
     } 
     # Track how many cards user has done
-    progress_label = tk.Label(win,text="",bg="#1a1a2e",fg="white",font=("Helvetica", 12, "bold"))
+    progress_label = tk.Label(win,text="",bg=DARK_BLUE,fg="white",font=("Helvetica", 12, "bold"))
     progress_label.pack(pady=(15, 0))
 
-    card_outer = tk.Frame(win, bg="#1a1a2e")
+    card_outer = tk.Frame(win, bg=DARK_BLUE)
     card_outer.pack(expand=True, fill="both", padx=40, pady=20)
     
     
@@ -315,24 +315,24 @@ def study_deck(self, deck_id, deck_name):
     card_label.place(relx=0.5, rely=0.45, anchor="center")
 
 
-    btn_row = tk.Frame(win, bg="#1a1a2e")
+    btn_row = tk.Frame(win, bg=DARK_BLUE)
     btn_row.pack(pady=(0, 28))
 
     def make_circle_btn(circle_frame, label, symbol, colour, command):
         """Creates a circular button."""
-        sub = tk.Frame(circle_frame, bg="#1a1a2e")
+        sub = tk.Frame(circle_frame, bg=DARK_BLUE)
         sub.pack(side="left", padx=20)
         size = 72
         # Create a canvas to draw the circle button
-        circle = tk.Canvas(sub, width=size, height=size,highlightthickness=0, bg="#1a1a2e") 
+        circle = tk.Canvas(sub, width=size, height=size,highlightthickness=0, bg=DARK_BLUE) 
         circle.pack()
         # Draw the circle
         circle.create_oval(4, 4, size - 4, size - 4, fill=colour, outline="") 
         # Draw the symbol in the center of the circle
         circle.create_text(size // 2, size // 2, text=symbol,
-                            font=("Helvetica", 22), fill="#1a1a2e")
+                            font=("Helvetica", 22), fill=DARK_BLUE)
         circle.bind("<Button-1>", lambda e: command())
-        tk.Label(sub, text=label, bg="#1a1a2e", fg="#cccccc",
+        tk.Label(sub, text=label, bg=DARK_BLUE, fg="#cccccc",
                     font=("Helvetica", 9)).pack(pady=(4, 0))
 
     def next_card():
@@ -410,8 +410,8 @@ def study_deck(self, deck_id, deck_name):
         for widgets in win.winfo_children():
             widgets.destroy()
         # Set the background color of the summary screen
-        win.configure(bg="#1a1a2e") 
-        tk.Label(win, text="Revision Complete!", bg="#1a1a2e", fg="white",
+        win.configure(bg=DARK_BLUE) 
+        tk.Label(win, text="Revision Complete!", bg=DARK_BLUE, fg="white",
                     font=("Helvetica", 22, "bold")).pack(pady=(60, 10))
         close_cards=tk.Label(win, text="Close", bg=DARK_RED, fg="white", relief="flat",
                     font=("Helvetica", 11), padx=16, pady=6)

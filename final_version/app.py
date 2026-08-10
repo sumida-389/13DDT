@@ -8,7 +8,7 @@ from home import home_screen, open_settings_sidebar
 from notes import notes_screen, note_edit_screen
 from flashcards import flashcards_screen, deck_edit_screen, study_deck
 from quiz import quiz_screen, quiz_edit_screen, take_quiz
-from calander import calendar_screen
+from calender import calendar_screen
 from reminders import reminders_screen
 from search import open_search_panel
 

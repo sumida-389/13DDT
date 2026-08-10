@@ -22,7 +22,7 @@ def quiz_screen(self):
     quiz_name_entry.pack(side="left", padx=5)
     
     status_quiz=tk.Label(top, text="", bg=GREY_BG, fg=DARK_RED)
-    status_quiz.pack(side="left", padx=5,pady=5)
+    status_quiz.pack(side="left", padx=5,pady=20)
     
     def create_quiz():
         """ Creates a new quiz in the database."""
@@ -30,6 +30,9 @@ def quiz_screen(self):
         # If the name is empty dont let user create quiz
         if not name: 
             status_quiz.config(text="Enter a quiz name")
+            return
+        if len(name)>30:
+            status_quiz.config(text="Title must be less than 30 characters")
             return
         cursor.execute("INSERT INTO quizzes (user_id, title) VALUES (?, ?)",
                         (self.current_user_id, name))
