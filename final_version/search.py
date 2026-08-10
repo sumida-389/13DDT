@@ -1,7 +1,7 @@
 import tkinter as tk
 
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG , LIGHT_GREY
-from helpers_final import make_hover_foreground
+from constants import DARK_RED, NAVY_BLUE, GREY_BG , LIGHT_GREY
+from helpers import make_hover_foreground
 
 
 def open_search_panel(self):
@@ -131,7 +131,7 @@ def open_search_panel(self):
             make_result_row(
                 f"{rtitle} ({rat})", "reminder",
                 lambda: (panel.destroy(), self.reminders_screen()))
-        
+        #if not results are found display a message
         if not results_frame.winfo_children():
             tk.Label(results_frame, text="No results found.", bg="white",
                     fg=LIGHT_GREY, font=("Helvetica", 10)).pack(pady=20)

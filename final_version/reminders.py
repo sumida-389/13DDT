@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, BLUE_HOVER_COLOR, LIGHT_GREY
-from helpers_final import clear_screen, make_hover_background
+from constants import DARK_RED, NAVY_BLUE, BLUE_HOVER_COLOR, LIGHT_GREY
+from helpers import clear_screen, make_hover_background
 
 def reminders_screen(self):
     from datetime import datetime

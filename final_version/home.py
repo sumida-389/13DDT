@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, RED_HOVER_COLOR, LIGHT_GREY
-from helpers_final import clear_screen, make_hover_background, make_hover_foreground
+from constants import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, RED_HOVER_COLOR, LIGHT_GREY
+from helpers import clear_screen, make_hover_background, make_hover_foreground
 
 def home_screen(self):
     """Creates the home screen with dashboard"""

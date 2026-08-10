@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, BLUE_HOVER_COLOR, LIGHT_GREY
-from helpers_final import clear_screen, make_hover_background
+from constants import DARK_RED, NAVY_BLUE, GREY_BG, TYPE_COLORS, BLUE_HOVER_COLOR, LIGHT_GREY
+from helpers import clear_screen, make_hover_background
 
 def calendar_screen(self):
     """Creates the calendar screen where users can view and add events."""
@@ -206,7 +206,7 @@ def calendar_screen(self):
             if c == 7:
                 c, r = 0, r + 1  
                 
-
+    #Create a footer showing events and their colours.
     for event_type, colour in TYPE_COLORS.items():
         item = tk.Frame(footer, bg="white")
         item.pack(side="left", padx=12)

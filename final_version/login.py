@@ -2,9 +2,9 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, RED_HOVER_COLOR,LIGHT_GREY
-from databasesetup_final import hash_password
-from helpers_final import clear_screen, make_hover_background
+from constants import DARK_RED, RED_HOVER_COLOR,LIGHT_GREY
+from databasesetup import hash_password
+from helpers import clear_screen, make_hover_background
 
 def login_screen(self):
     """Creates the login screen with username and password fields, a login button, and a link to the registration screen."""
@@ -155,9 +155,7 @@ def register_screen(self):
             status.config(text="Username already exists.")
     
     # Register button in label form so that I can change the color on hover
-    regis_btn=tk.Label(form, text="Register",
-            bg=DARK_RED, fg="white",
-            font=("Helvetica", 13, "bold"),
-            relief="flat", bd=0, width=30, height=2)
+    regis_btn=tk.Label(form, text="Register",bg=DARK_RED, fg="white",
+            font=("Helvetica", 13, "bold"),relief="flat", bd=0, width=30, height=2)
     regis_btn.pack(pady=(4, 0))
     regis_btn.bind("<Button-1>", lambda e: attempt_register())

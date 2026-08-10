@@ -1,16 +1,16 @@
 import tkinter as tk
  
-from constants_final import DARK_RED, GREY_BG
-from databasesetup_final import DatabaseSetup
+from constants import DARK_RED, GREY_BG
+from databasesetup import DatabaseSetup
 
-from login_final import login_screen, register_screen
-from home_final import home_screen, open_settings_sidebar
-from notes_final import notes_screen, note_edit_screen
-from flashcards_final import flashcards_screen, deck_edit_screen, study_deck
-from quiz_final import quiz_screen, quiz_edit_screen, take_quiz
-from calendar_final import calendar_screen
-from reminders_final import reminders_screen
-from search_final import open_search_panel
+from login import login_screen, register_screen
+from home import home_screen, open_settings_sidebar
+from notes import notes_screen, note_edit_screen
+from flashcards import flashcards_screen, deck_edit_screen, study_deck
+from quiz import quiz_screen, quiz_edit_screen, take_quiz
+from calander import calendar_screen
+from reminders import reminders_screen
+from search import open_search_panel
 
 
 class AppFace:

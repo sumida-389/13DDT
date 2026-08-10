@@ -2,8 +2,8 @@ import sqlite3
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR,RED_HOVER_COLOR, LIGHT_GREY
-from helpers_final import clear_screen, make_hover_background
+from constants import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR,RED_HOVER_COLOR, LIGHT_GREY
+from helpers import clear_screen, make_hover_background
 
 def flashcards_screen(self):
     """Creates the flashcards screen where users can see, create, and delete flashcard sets."""

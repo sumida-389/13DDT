@@ -1,8 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
  
-from constants_final import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR, LIGHT_GREY
-from helpers_final import clear_screen, make_hover_background
+from constants import DARK_RED, NAVY_BLUE, GREY_BG, BLUE_HOVER_COLOR, LIGHT_GREY
+from helpers import clear_screen, make_hover_background
 
 def quiz_screen(self):  
     """Creates the quiz management screen where users can see, create, edit, and delete quizzes."""
