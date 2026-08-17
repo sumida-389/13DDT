@@ -386,6 +386,7 @@ def note_edit_screen(self, note_id, note_title):
         deck_menu_frame = tk.Frame(popup, bg=GREY_BG)
         deck_menu_frame.pack(anchor="w", padx=16, fill="x")
 
+        # string var is used to track the selected deck in the dropdown menu. If there are no decks, default to the option to create a new deck
         selected_deck = tk.StringVar(value=decks[0][1] if decks else new_deck_option)
 
         def deck_menu_options():
@@ -454,6 +455,7 @@ def note_edit_screen(self, note_id, note_title):
             cursor="hand2",
         )
         new_deck_btn.pack(side="left", padx=(10, 0))
+        # Bind the button to the function that creates a new deck
         new_deck_btn.bind("<Button-1>", lambda e: create_new_deck())
 
         tk.Label(
