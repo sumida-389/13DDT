@@ -1,20 +1,21 @@
 import sqlite3
 import hashlib
 
+
 class DatabaseSetup:
-    def __init__(self,db_path="study_app.db"):
+    def __init__(self, db_path="study_app.db"):
         """Creates the database connection and sets up the database file."""
         self.db_path = db_path
         # Checks if the settings window is open
-        self.settings_win = None 
-        #Connect to the database file (creates it if it doesn't exist)
+        self.settings_win = None
+        # Connect to the database file (creates it if it doesn't exist)
         self.connection = sqlite3.connect(db_path)
-                
-    def create_tables(self): 
-        """Creates the tables in the database if they don't already exist."""
-        cursor = self.connection.cursor() 
 
-        #Users table
+    def create_tables(self):
+        """Creates the tables in the database if they don't already exist."""
+        cursor = self.connection.cursor()
+
+        # Users table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,20 +23,21 @@ class DatabaseSetup:
                 password    TEXT    NOT NULL
             )
         """)
-        
-        #Add a column in the data base that tracks streaks
+
+        # Add a column in the data base that tracks streaks
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN last_login_date TEXT")
         except sqlite3.OperationalError:
             pass
         try:
-            cursor.execute("ALTER TABLE users ADD COLUMN streak INTEGER NOT NULL DEFAULT 0")
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN streak INTEGER NOT NULL DEFAULT 0"
+            )
         except sqlite3.OperationalError:
             pass
         self.connection.commit()
 
-
-        #Notes table
+        # Notes table
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notes (
@@ -49,7 +51,7 @@ class DatabaseSetup:
             )
         """)
 
-        #Deck table
+        # Deck table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS decks (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,8 +61,8 @@ class DatabaseSetup:
                 UNIQUE (user_id, name)
             )
         """)
-        
-        #Flashcards table
+
+        # Flashcards table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS flashcards (
                 id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,8 +75,8 @@ class DatabaseSetup:
                 
             )
         """)
-        
-        #Quiz tables
+
+        # Quiz tables
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quizzes (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,8 +86,8 @@ class DatabaseSetup:
             )
         """)
         self.connection.commit()
-        
-        #Questions table
+
+        # Questions table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quiz_questions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,7 +100,7 @@ class DatabaseSetup:
                 correct TEXT NOT NULL,
                 FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE)
                 """)
-        #Quiz score table
+        # Quiz score table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quiz_attempts (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,8 +113,8 @@ class DatabaseSetup:
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         """)
-        
-        #Calender events table
+
+        # Calender events table
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS calendar_events (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,8 +124,8 @@ class DatabaseSetup:
             event_type  TEXT    NOT NULL DEFAULT 'other',
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)
             """)
-        
-        #Reminders table
+
+        # Reminders table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS reminders (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,16 +140,18 @@ class DatabaseSetup:
     def get_cursor(self):
         """Returns a cursor so other parts of the app can query the database"""
         return self.connection.cursor()
- 
- 
+
     def update_streak(self, user_id):
         """Updates the user's login streak. Calls it once every time user login.
         If they last logged in yesterday, the streak goes up by 1. If they
         already logged in today, the streak stays the same. If they haven't logged in
-        the previous day, the streak is reset. """
+        the previous day, the streak is reset."""
         from datetime import date, timedelta
+
         cursor = self.connection.cursor()
-        cursor.execute("SELECT last_login_date, streak FROM users WHERE id=?", (user_id,))
+        cursor.execute(
+            "SELECT last_login_date, streak FROM users WHERE id=?", (user_id,)
+        )
         row = cursor.fetchone()
         last_login_date, streak = row if row else (None, 0)
         streak = streak or 0
@@ -165,16 +169,15 @@ class DatabaseSetup:
 
         cursor.execute(
             "UPDATE users SET last_login_date=?, streak=? WHERE id=?",
-            (today_str, streak, user_id)
+            (today_str, streak, user_id),
         )
         self.connection.commit()
         return streak
-    
- 
+
     def commit(self):
         """Saves any changes made to the database"""
         self.connection.commit()
-        
+
 
 def hash_password(password):
     """Hashes the password using SHA-256 and returns the hexadecimal digest."""
